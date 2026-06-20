@@ -248,12 +248,107 @@ See `roles.md` for full responsibilities, deliverables, and hour-by-hour build o
 | Tool | Notes |
 |------|-------|
 | Python 3.11+ | Primary language |
-| `anthropic` SDK | Claude API — `claude-sonnet-4-6` or latest |
+| `google-generativeai` SDK | Gemini API — `gemini-1.5-flash` for all agents |
 | Band SDK | LangChain or CrewAI — Eshwar decides early, everyone follows |
 | Arize Phoenix | `pip install arize-phoenix` — local, no API key |
 | LiveKit Python SDK | Sensor stream in, motor commands out |
 | LangChain or CrewAI | Agent framework — consistent across all agents |
 | Nebius Physical Workbench | UFB's required compute platform — set up before anything else |
+
+### Agent LLM Configuration (Semi-Deterministic)
+All agents use Gemini with:
+- `temperature=0.1` — near-deterministic, consistent behavior across runs
+- `response_mime_type="application/json"` — structured output enforced at the API level
+- Retry once on parse failure with an explicit correction prompt
+- System prompt always ends with: *"Respond ONLY with valid JSON matching the schema. No explanation outside the JSON."*
+
+```python
+import google.generativeai as genai
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+model = genai.GenerativeModel(
+    "gemini-1.5-flash",
+    generation_config=genai.GenerationConfig(
+        temperature=0.1,
+        response_mime_type="application/json",
+    )
+)
+```
+
+---
+
+## Agent I/O Specification
+*(Use this to verify each agent is working correctly in isolation before integration)*
+
+### Conductor Agent — Input
+```json
+{
+  "scene": "string — from Vision Agent via Band",
+  "last_action": "string — what was last sent to robot",
+  "user_state": "WALKING | STOPPED | TURNING",
+  "arize_feedback": "string — optional, injected between runs for neuroplasticity"
+}
+```
+### Conductor Agent — Output
+```json
+{
+  "decision": "MOVE_FORWARD | TURN_LEFT | TURN_RIGHT | STOP | SLOW_DOWN",
+  "reason": "one sentence",
+  "upper_body_task": "SIGNAL_LEFT | SIGNAL_RIGHT | SIGNAL_STOP | SIGNAL_FORWARD | HOLD",
+  "lower_body_task": "WALK | SLOW | STOP | STEP_OVER | NAVIGATE_CURB"
+}
+```
+
+### Upper Body Agent — Input
+```json
+{
+  "task": "SIGNAL_LEFT | SIGNAL_RIGHT | SIGNAL_STOP | SIGNAL_FORWARD | HOLD",
+  "lower_body_status": "string — from peer negotiation with Lower Body Agent",
+  "scene": "string"
+}
+```
+### Upper Body Agent — Output
+```json
+{
+  "arm_action": "GENTLE_LEFT_PULL | GENTLE_RIGHT_PULL | FORWARD_PUSH | HOLD_STEADY | RELEASE",
+  "ready": true,
+  "conflict": "string or null — e.g. 'need arm free for balance'"
+}
+```
+
+### Lower Body Agent — Input
+```json
+{
+  "task": "WALK | SLOW | STOP | STEP_OVER | NAVIGATE_CURB",
+  "upper_body_status": "string — from peer negotiation with Upper Body Agent",
+  "scene": "string"
+}
+```
+### Lower Body Agent — Output
+```json
+{
+  "gait_action": "WALK_NORMAL | WALK_SLOW | PAUSE | STEP_HIGH | STEP_DOWN | HALT",
+  "pace_ms": 500,
+  "ready": true,
+  "conflict": "string or null"
+}
+```
+
+### Threat Agent — Input
+```json
+{
+  "scene": "string — reads directly from Vision Agent output, independently of Conductor"
+}
+```
+### Threat Agent — Output
+```json
+{
+  "threat_level": "NONE | LOW | HIGH | CRITICAL",
+  "threat_type": "VEHICLE | OBSTACLE | DROP | PERSON | null",
+  "fire_reflex": false,
+  "reflex_command": "EMERGENCY_STOP | null"
+}
+```
+If `fire_reflex: true` → bypasses Conductor entirely, triggers Safety Agent + Joint Agents directly (Reflex Arc path).
 
 ---
 
