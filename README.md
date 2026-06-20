@@ -1,8 +1,8 @@
-# UC Berkeley AI Hackathon 2026 — Robot Multi-Agent System
+# Baymax — A Nervous System for a Humanoid Guide Robot
 
-A multi-agent AI system that controls a humanoid robot in real time. Specialized agents perceive, plan, and act — coordinating through Band, streaming via LiveKit, and fully observable through Arize Phoenix.
+Baymax is a humanoid guide robot that safely navigates a person through the world. Each AI agent maps to a region of the human brain, the agents communicate through Band the way neurons fire signals, and Arize makes every decision visible like an fMRI of the robot's mind — all to safely guide a person through the world. The flagship demo guides a blindfolded person along a route: perceiving hazards, planning a safe path, and steering with gentle hand signals (left / right / stop / forward). A spinal-cord-style **Reflex Arc** lets the Threat Agent fire an emergency STOP in ~90ms, and **Neuroplasticity** lets the Conductor read Arize traces between sessions and rewrite underperforming agent prompts so each walk gets smoother and safer.
 
-**For full project details, architecture, build order, and agent specs → see [`project_context.md`](./project_context.md)**
+**For full project details, architecture, build order, and agent specs → see [`roles.md`](./roles.md)**
 
 ---
 
@@ -10,21 +10,23 @@ A multi-agent AI system that controls a humanoid robot in real time. Specialized
 
 | Sponsor | Role | Prize |
 |---------|------|-------|
-| **UFB (Ultimate Bots)** | Robot / physical AI target | $3,000 |
-| **Band** | Multi-agent communication platform | $1,000 |
-| **Arize Phoenix** | Observability & decision tracing | $1,000 |
-| **Ddoski's Lab** | Science/Engineering track | $5,000 |
+| **UFB (Ultimate Bots)** | Physical AI Hack — end-to-end robot control | $3,000 |
+| **Band** | Multi-agent collaboration — 5+ agents coordinating | $1,000 |
+| **Arize Phoenix** | Observability — fMRI demo + neuroplasticity before/after | $1,000 |
+| **Ddoski's Lab** | Science/Engineering track — reflex arc + social impact | $5,000 |
 
 **Total potential: $10,000**
+
+> Nebius is the required compute platform for UFB ($150 free compute/team via UFB Slack). Set it up first.
 
 ---
 
 ## Stack
 
-LiveKit · Band · Arize Phoenix · Claude API · Python · LangChain or CrewAI
+Python 3.11+ · Claude API (`claude-sonnet-4-6`) · Band · Arize Phoenix · LiveKit · LangChain or CrewAI · Nebius Physical Workbench
 
 ---
 
 ## Team
 
-UC Berkeley AI Hackathon 2026 — June 20–21, MLK Jr. Student Union
+**Eshwar** · **Advaita** · **Adil** · **Matthew** — UC Berkeley AI Hackathon 2026, June 20–21, MLK Jr. Student Union. Deadline 11:00 AM Sunday 6/21.
