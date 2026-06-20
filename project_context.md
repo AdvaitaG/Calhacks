@@ -203,6 +203,7 @@ Follow strictly. Do not jump ahead.
 | Arize Phoenix | `pip install arize-phoenix` — local, no API key |
 | LiveKit Python SDK | Robot video stream in, commands out |
 | LangChain or CrewAI | Agent framework for all agents |
+| **Nebius Physical Workbench** | UFB's partnered platform for physical AI — starting point for robot sim/hardware access. Use this to get the physical AI environment running before wiring LiveKit. |
 
 ---
 
