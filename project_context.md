@@ -61,33 +61,42 @@ The core novelty: instead of one monolithic agent controlling the robot, control
 
 ## Agent Architecture
 
+Band supports an **Orchestrator/Conductor agent** living in the room alongside all other agents. The conductor issues high-level tasks, and the joint-segment agents respond with their plans and actions independently — then report back.
+
 ```
 Robot (UFB hardware or sim)
   └── LiveKit stream (camera feed in)
-        └── Vision Agent
+        └── Vision Agent (perceives scene)
               └── Band Room
-                    ├── Planning Agent
-                    ├── Safety Agent
-                    └── Coordinator Agent → LiveKit → Robot command (out)
+                    ├── Conductor Agent       ← orchestrates, issues task to all agents
+                    ├── Upper Body Agent      ← controls shoulder / elbow / wrist joints
+                    ├── Lower Body Agent      ← controls hip / knee / ankle joints
+                    ├── Safety Agent          ← monitors all decisions, can veto
+                    └── → Conductor finalizes → LiveKit → Robot command (out)
 ```
 
 ### Agent Roles
 
 | Agent | Job | Input | Output |
 |-------|-----|-------|--------|
-| **Vision Agent** | Perceives the scene | LiveKit camera feed | Text description of current state (position, obstacles, opponent, etc.) |
-| **Planning Agent** | Decides next action | Vision Agent output via Band | Proposed action / command |
-| **Safety Agent** | Validates decisions | Planning Agent output via Band | Approved or vetoed action + reason |
-| **Coordinator Agent** | Synthesizes and executes | All agent outputs via Band | Final command sent to robot via LiveKit |
+| **Vision Agent** | Perceives the scene | LiveKit camera feed | Text description of current state (position, joints, opponent, etc.) |
+| **Conductor Agent** | Orchestrates all agents | Vision Agent output + round results | High-level task broadcast to joint agents via Band |
+| **Upper Body Agent** | Plans upper joint commands | Conductor task + scene description | Shoulder / elbow / wrist action plan |
+| **Lower Body Agent** | Plans lower joint commands | Conductor task + scene description | Hip / knee / ankle action plan |
+| **Safety Agent** | Validates all decisions | All agent outputs via Band | Approved or vetoed action + reason |
+
+Each joint-segment agent works **independently and in parallel** — they don't wait on each other. The Conductor collects their outputs and synthesizes the final command.
 
 ### Data Flow (step by step)
 ```
 1. Robot → LiveKit stream → Vision Agent (sees the world)
-2. Vision Agent → Band Room → Planning Agent (decides what to do)
-3. Planning Agent → Band Room → Safety Agent (checks if it's safe)
-4. Safety Agent → Band Room → Coordinator Agent (synthesizes)
-5. Coordinator Agent → LiveKit → Robot command (acts)
-6. All steps → Arize Phoenix (every call traced)
+2. Vision Agent → Band Room (broadcasts scene description)
+3. Conductor Agent → Band Room (issues high-level task to all agents)
+4. Upper Body Agent + Lower Body Agent plan independently (in parallel via Band)
+5. Safety Agent monitors all plans, vetoes if unsafe
+6. Conductor Agent synthesizes approved plans → final command
+7. Conductor → LiveKit → Robot command (acts)
+8. All steps → Arize Phoenix (every call traced)
 ```
 
 ---
