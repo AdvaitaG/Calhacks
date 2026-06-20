@@ -35,30 +35,33 @@
 
 ---
 
-## Advaita — Robot I/O & LiveKit (The Senses & Body)
+## Advaita — Robot I/O, Nebius & LiveKit (The Senses & Body)
 
-**Own everything between the robot and the agents. The nervous system's connection to the physical world.**
+**Own everything between the robot and the agents. The nervous system's connection to the physical world. Nebius is your first task — nothing else works without it.**
 
 ### Agents
 - **Vision Agent** (Sensory Cortex) — receives robot camera feed via LiveKit, describes the scene, broadcasts to Band room
 - **Conductor → Robot command** — wire the Conductor's final output back to the robot via LiveKit
 
 ### Responsibilities
+- **First**: Set up Nebius Physical Workbench — this is the required compute platform for UFB. Do this before LiveKit or anything else.
+- Claim the UFB $150 compute credit via UFB Slack channel (provisioned through Nebius)
 - Set up LiveKit room and connect to UFB robot camera feed (or webcam sim if hardware isn't available yet)
 - Write the Vision Agent: frame in → Claude → scene description out → Band room
 - Wire the return path: Conductor final command → LiveKit → robot/sim executes
 - Own the **fallback plan**: if UFB hardware isn't at the event, spin up a webcam sim so the team isn't blocked
-- Claim the UFB $150 compute credit via their Slack channel
 - Frame the robot demo for UFB judges: *"production-grade robotics team architecture"*
 
 ### Deliverables
+- [ ] Nebius Physical Workbench set up and running
+- [ ] UFB compute credit claimed via UFB Slack
 - [ ] LiveKit room running with frames flowing — this unblocks Eshwar and Matthew
 - [ ] Vision Agent posting scene descriptions to Band room
 - [ ] Return path: Conductor command → LiveKit → robot or sim executes
 - [ ] Webcam fallback sim ready if UFB hardware unavailable
-- [ ] UFB compute credit claimed
 
 ### Stack
+- **Nebius Physical Workbench** (start here)
 - LiveKit Python SDK
 - UFB hardware or simulator API
 - Claude API (Vision Agent prompt — keep it tight: describe what you see, nothing more)
@@ -116,7 +119,7 @@
 
 ```
 Hour 1–2
-  Advaita  → LiveKit room up, webcam sim running, frames flowing
+  Advaita  → Nebius Physical Workbench up, UFB compute claimed, LiveKit room running
   Eshwar   → Band room up, framework chosen, Vision + Conductor loop
   Matthew  → Arize Phoenix running locally, first agent instrumented
 

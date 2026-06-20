@@ -39,8 +39,16 @@ The demo arc:
 - UFB provides **$150 free compute per team** (via their Slack channel)
 - If real hardware is unavailable at the event, fall back to their simulator or a webcam-based sim
 - Judging bar: "Would a real robotics team use it?" — NeuralPilot answers yes: real robotics teams decompose control exactly this way (separate controllers for balance, arm movement, threat response)
+- **Nebius is the required compute platform for UFB** — do not attempt to run UFB without Nebius
 
-### 2. Band (Multi-Agent Communication Platform)
+### 2. Nebius (GPU Cloud Compute — Essential for UFB)
+- Nebius Physical Workbench is the compute layer that makes the UFB robot/sim accessible
+- **Required** — UFB integration does not work without Nebius. Set this up before anything else in the robot I/O layer.
+- Provides the GPU infrastructure for running agent inference at the speed needed for real-time robot control
+- UFB's $150 free compute per team is provisioned through Nebius (claim via UFB Slack channel)
+- Advaita owns setup and integration (see roles.md)
+
+### 3. Band (Multi-Agent Communication Platform)
 - Prize track: **Multi-agent collaboration — $1,000**
 - Band is the "neural pathway" — agents communicate through a shared Band room the way brain regions send signals
 - Each agent is an **external/remote agent** — runs in whatever framework we choose, registers with Band via `agent name` + `API key`
@@ -49,7 +57,7 @@ The demo arc:
 - Minimum **2 agents through Band** to qualify for prize — we will have 5+
 - Key design rule: **one job per agent**, short focused prompts, mirrors single-responsibility of brain regions
 
-### 3. Arize Phoenix (Observability — "The fMRI")
+### 5. Arize Phoenix (Observability — "The fMRI")
 - Prize track: **Observability improves the app — $1,000**
 - Fully open source, runs locally, **no API key needed** (`pip install arize-phoenix`)
 - In our framing: Arize is the fMRI of the robot's brain — judges watch agent decisions light up in real time alongside the fight
@@ -62,13 +70,13 @@ The demo arc:
   4. Feedback used to improve agent behavior (neuroplasticity = the before/after)
   5. Tell them at their booth
 
-### 4. LiveKit (Real-Time Streaming — "The Senses")
+### 6. LiveKit (Real-Time Streaming — "The Senses")
 - Real-time video/audio/data streaming between robot and cloud agents
 - Vision Agent (sensory cortex) receives robot camera feed via LiveKit
 - Conductor sends final commands back to robot via LiveKit
 - Fallback: if UFB doesn't support real-time control, use LiveKit for video only and simulate robot commands
 
-### 5. Claude API (LLM — "The Neurons")
+### 7. Claude API (LLM — "The Neurons")
 - Powers every agent's reasoning
 - Use `claude-sonnet-4-6` or latest capable model
 - Each agent has a tight, single-responsibility system prompt — one brain region, one job
@@ -203,7 +211,7 @@ Follow strictly. Do not jump ahead.
 | Arize Phoenix | `pip install arize-phoenix` — local, no API key |
 | LiveKit Python SDK | Robot video stream in, commands out |
 | LangChain or CrewAI | Agent framework for all agents |
-| **Nebius Physical Workbench** | UFB's partnered platform for physical AI — starting point for robot sim/hardware access. Use this to get the physical AI environment running before wiring LiveKit. |
+| **Nebius Physical Workbench** | Required compute platform for UFB — set up first, before LiveKit. Provisions GPU infrastructure for real-time agent inference. |
 
 ---
 
