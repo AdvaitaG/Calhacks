@@ -15,8 +15,16 @@ pids=()
 cleanup() { echo; echo "stopping..."; kill "${pids[@]}" 2>/dev/null; }
 trap cleanup EXIT INT TERM
 
+# Fresh room every run: the 422 mark-processed bug means stale rooms replay old
+# scenes and the Conductor lags. clean_and_reset makes an empty room + writes
+# BAYMAX_ROOM to .env so every process agrees on it.
+echo "creating a fresh Band room (clean_and_reset) ..."
+$PY clean_and_reset.py > logs/clean_and_reset.log 2>&1 \
+  && grep -i "DONE" logs/clean_and_reset.log || { echo "clean_and_reset failed — see logs/clean_and_reset.log"; exit 1; }
+
 echo "starting agents + synthetic camera (logs/) ..."
-for a in vision conductor upper_left upper_right lower threat spine safety; do
+$PY agents/vision_agent.py > logs/vision.log 2>&1 & pids+=($!)
+for a in conductor upper_left upper_right lower threat spine safety; do
   $PY "agents/$a.py" > "logs/$a.log" 2>&1 & pids+=($!)
 done
 ( cd robot && exec ../$PY sim_camera.py ) > logs/sim_camera.log 2>&1 & pids+=($!)

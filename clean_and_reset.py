@@ -90,7 +90,24 @@ async def main() -> None:
         except Exception as e:  # noqa: BLE001
             print(f"{name} connect error: {str(e).splitlines()[0][:50]}")
 
-    print(f"\nDONE. All agents now in exactly one room: {target}")
+    # Pin the room so every process agrees on it (list order is non-deterministic).
+    _write_env_var("BAYMAX_ROOM", target)
+    print(f"\nDONE. All agents in room {target}")
+    print(f"Wrote BAYMAX_ROOM={target} to .env — bridge + demo will use it.")
+
+
+def _write_env_var(key: str, value: str) -> None:
+    """Add or replace KEY=value in the repo .env."""
+    path = ".env"
+    lines = []
+    try:
+        with open(path) as f:
+            lines = [ln for ln in f.read().splitlines() if not ln.startswith(key + "=")]
+    except FileNotFoundError:
+        pass
+    lines.append(f"{key}={value}")
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
 
 
 if __name__ == "__main__":

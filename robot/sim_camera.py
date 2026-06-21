@@ -35,16 +35,32 @@ async def main() -> None:
     await room.local_participant.publish_track(
         track, rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_CAMERA))
 
-    # a sidewalk scene: ground + a red obstacle slightly right of center
-    frame = np.full((H, W, 3), 205, np.uint8)
-    cv2.rectangle(frame, (0, 310), (W, H), (155, 155, 155), -1)
-    cv2.rectangle(frame, (360, 170), (480, 320), (40, 40, 200), -1)
-    cv2.putText(frame, "obstacle ahead-right", (20, 40),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
-    rgba = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-    print("[sim_camera] publishing front_camera frames; ctrl-c to stop")
+    # Cycle a few scenes so the Conductor produces varied commands and the robot
+    # visibly walks + steers (instead of one static obstacle -> always STOP).
+    def base() -> np.ndarray:
+        f = np.full((H, W, 3), 205, np.uint8)
+        cv2.rectangle(f, (0, 310), (W, H), (155, 155, 155), -1)  # ground
+        return f
+
+    def labelled(f, text):
+        cv2.putText(f, text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0), 2)
+        return cv2.cvtColor(f, cv2.COLOR_BGR2RGBA)
+
+    clear = labelled(base(), "clear path ahead")
+    f = base(); cv2.rectangle(f, (40, 170), (170, 320), (40, 40, 200), -1)
+    obstacle_left = labelled(f, "obstacle on the LEFT")
+    f = base(); cv2.rectangle(f, (470, 170), (600, 320), (40, 40, 200), -1)
+    obstacle_right = labelled(f, "obstacle on the RIGHT")
+    scenes = [("clear", clear), ("obstacle-left", obstacle_left),
+              ("obstacle-right", obstacle_right)]
+
+    print("[sim_camera] cycling scenes (clear / obstacle-left / obstacle-right)")
+    period = 8.0  # seconds per scene
     try:
-        for _ in itertools.count():
+        for i in itertools.count():
+            name, rgba = scenes[int(i / (15 * period)) % len(scenes)]
+            if i % int(15 * period) == 0:
+                print(f"[sim_camera] scene -> {name}")
             source.capture_frame(rtc.VideoFrame(W, H, rtc.VideoBufferType.RGBA, rgba.tobytes()))
             await asyncio.sleep(1 / 15)
     except KeyboardInterrupt:
