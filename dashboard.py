@@ -365,98 +365,148 @@ HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Baymax — Live Pipeline</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baymax — Nervous System</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', system-ui, sans-serif; padding: 16px; min-height: 100vh; }
-
-h1 { font-size: 1.5rem; letter-spacing: 3px; color: #58a6ff; }
-.subtitle { font-size: 0.75rem; color: #8b949e; margin-top: 2px; }
-.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+body {
+  background: #0d1117; color: #e6edf3;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh; display: flex; flex-direction: column;
+  overflow-x: hidden;
+}
+h1 { font-size: 1.4rem; letter-spacing: 3px; color: #58a6ff; }
+.subtitle { font-size: 0.72rem; color: #8b949e; margin-top: 2px; }
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; border-bottom: 1px solid #21262d; flex-shrink: 0;
+}
 .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
 .badge.green { background: #1a4731; color: #3fb950; }
 .badge.grey  { background: #21262d; color: #8b949e; }
+.path-badge { font-size: 0.65rem; padding: 3px 10px; border-radius: 8px; font-weight: 700; letter-spacing: 1px; }
+.path-CORTICAL { background: #0d2f5e; color: #58a6ff; }
+.path-REFLEX { background: #3d1214; color: #f85149; }
 
-/* Layout: left pipeline + right robot */
-.main { display: grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start; }
-
-/* ---- Pipeline (left) ---- */
-.pipeline { display: flex; flex-direction: column; gap: 8px; }
-.row { display: flex; gap: 8px; }
-.card {
-  background: #161b22; border: 1px solid #30363d; border-radius: 10px;
-  padding: 12px 14px; flex: 1;
-  transition: border-color 0.4s, box-shadow 0.4s;
-  min-width: 0;
+/* ---- Robot stage (hero) ---- */
+.stage-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.robot-stage {
+  position: relative; flex: 1; min-height: 480px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 16px;
 }
-.card.flash { border-color: #58a6ff; box-shadow: 0 0 14px #58a6ff55; }
-.card.flash-red { border-color: #f85149; box-shadow: 0 0 14px #f8514955; }
-.card.flash-green { border-color: #3fb950; box-shadow: 0 0 14px #3fb95055; }
-.card-title { font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #8b949e; margin-bottom: 6px; }
-.card-main { font-size: 0.95rem; font-weight: 700; color: #e6edf3; margin-bottom: 3px; }
-.card-sub  { font-size: 0.72rem; color: #8b949e; margin-bottom: 2px; }
-.card-thinking {
-  font-size: 0.7rem; color: #58a6ff; margin-top: 6px;
-  font-style: italic; min-height: 1.2em;
-  border-left: 2px solid #21262d; padding-left: 6px;
-  word-break: break-word;
-  transition: color 0.3s;
+#robot-svg, #link-layer {
+  position: absolute; width: min(65vw, 420px); height: auto;
+  max-height: calc(100vh - 200px);
 }
-.card-ts { font-size: 0.62rem; color: #484f58; margin-top: 4px; }
+#link-layer { pointer-events: none; z-index: 2; }
+#robot-svg { z-index: 1; }
 
-.hazard-NONE     { color: #3fb950; }
-.hazard-LOW      { color: #d29922; }
-.hazard-HIGH     { color: #f0883e; }
+.zone-glow { transition: filter 0.4s, opacity 0.4s; }
+.zone-glow.active { filter: drop-shadow(0 0 8px var(--glow-color, #58a6ff)); opacity: 1; }
+#zone-head { --glow-color: #58a6ff; }
+#zone-neck { --glow-color: #f0883e; }
+#zone-torso { --glow-color: #d2a8ff; }
+#zone-spine { --glow-color: #f85149; }
+#zone-arm-left { --glow-color: #7ee787; }
+#zone-arm-right { --glow-color: #7ee787; }
+#zone-lower { --glow-color: #79c0ff; }
+
+.link-line { fill: none; stroke-width: 1.5; stroke: #30363d; opacity: 0.35; }
+.link-line.peer { stroke-dasharray: 4 4; }
+.link-line.pulse { animation: linkPulse 0.7s ease-out; }
+@keyframes linkPulse {
+  0% { stroke-opacity: 1; stroke-width: 3; }
+  100% { stroke-opacity: 0.35; stroke-width: 1.5; }
+}
+
+/* ---- Agent overlay panels ---- */
+.agent-panel {
+  position: absolute; z-index: 10;
+  width: 168px; padding: 8px 10px;
+  background: rgba(22, 27, 34, 0.88);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #30363d; border-radius: 8px;
+  border-left: 3px solid var(--agent-color, #58a6ff);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  pointer-events: none;
+}
+.agent-panel.active {
+  box-shadow: 0 0 16px var(--agent-color, #58a6ff55);
+  border-color: var(--agent-color, #58a6ff);
+}
+.agent-panel.flash-red { border-color: #f85149; box-shadow: 0 0 16px #f8514955; }
+.agent-panel.flash-green { border-color: #3fb950; box-shadow: 0 0 16px #3fb95055; }
+.panel-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.panel-dot { width: 6px; height: 6px; border-radius: 50%; background: #484f58; flex-shrink: 0; }
+.panel-dot.live { background: #3fb950; animation: dotPulse 1.2s infinite; }
+@keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.panel-name { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #e6edf3; }
+.panel-region { font-size: 0.55rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; }
+.panel-action { font-size: 0.78rem; font-weight: 700; color: #e6edf3; margin: 3px 0; word-break: break-word; }
+.panel-sub { font-size: 0.65rem; color: #8b949e; margin-bottom: 2px; }
+.panel-thinking {
+  font-size: 0.65rem; color: #58a6ff; font-style: italic;
+  margin-top: 4px; line-height: 1.35; word-break: break-word;
+  max-height: 3.2em; overflow: hidden;
+}
+.panel-ts { font-size: 0.55rem; color: #484f58; margin-top: 3px; }
+
+.panel-vision { --agent-color: #58a6ff; }
+.panel-threat { --agent-color: #f0883e; }
+.panel-conductor { --agent-color: #d2a8ff; }
+.panel-upper_left { --agent-color: #7ee787; }
+.panel-upper_right { --agent-color: #7ee787; }
+.panel-lower { --agent-color: #79c0ff; }
+.panel-safety { --agent-color: #3fb950; }
+.panel-safety.vetoed { --agent-color: #f85149; }
+.panel-spine { --agent-color: #f85149; }
+
+.hazard-NONE { color: #3fb950; }
+.hazard-LOW { color: #d29922; }
+.hazard-HIGH { color: #f0883e; }
 .hazard-CRITICAL { color: #f85149; }
 .status-APPROVED { color: #3fb950; }
-.status-VETOED   { color: #f85149; }
+.status-VETOED { color: #f85149; }
 
-.arrow { text-align: center; color: #30363d; font-size: 1rem; line-height: 1; padding: 1px 0; }
-
-/* Final command bar */
-.final-bar {
-  background: #0d2f5e; border: 1px solid #388bfd; border-radius: 10px;
-  padding: 14px 18px; margin-top: 4px;
+/* ---- Final command strip ---- */
+.cmd-strip {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  z-index: 15; background: rgba(13, 47, 94, 0.92); border: 1px solid #388bfd;
+  border-radius: 10px; padding: 8px 20px; text-align: center;
+  backdrop-filter: blur(6px); min-width: 280px;
   transition: box-shadow 0.4s;
 }
-.final-bar.flash { box-shadow: 0 0 22px #388bfd88; }
-.final-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #388bfd; margin-bottom: 6px; }
-.final-command { font-size: 1.4rem; font-weight: 800; color: #58a6ff; margin-bottom: 4px; }
-.final-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
-.fi { background: #0d1b2e; border-radius: 6px; padding: 6px 8px; }
-.fi-label { font-size: 0.6rem; color: #388bfd; text-transform: uppercase; letter-spacing: 1px; }
-.fi-val { font-size: 0.78rem; color: #e6edf3; font-weight: 600; margin-top: 1px; }
+.cmd-strip.flash { box-shadow: 0 0 22px #388bfd88; }
+.cmd-strip-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; color: #388bfd; }
+.cmd-strip-main { font-size: 1.1rem; font-weight: 800; color: #58a6ff; }
+.cmd-strip-sub { font-size: 0.65rem; color: #8b949e; margin-top: 2px; }
+.cmd-strip-grid { display: flex; gap: 12px; justify-content: center; margin-top: 4px; flex-wrap: wrap; }
+.cmd-strip-item { font-size: 0.6rem; color: #8b949e; }
+.cmd-strip-item span { color: #e6edf3; font-weight: 600; }
 
-/* ---- Robot panel (right) ---- */
-.robot-panel {
-  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
-  padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px;
-  position: sticky; top: 16px;
+/* ---- Log drawer ---- */
+.log-drawer {
+  border-top: 1px solid #21262d; background: #0d1117; flex-shrink: 0;
 }
-.robot-panel h2 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: #8b949e; }
-#robot-svg { width: 100%; max-width: 280px; }
-
-.cmd-label { font-size: 0.65rem; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
-.cmd-value { font-size: 1.1rem; font-weight: 800; color: #58a6ff; text-align: center; }
-
-.arm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
-.arm-item { background: #0d1117; border-radius: 6px; padding: 6px 8px; text-align: center; }
-.arm-lbl { font-size: 0.6rem; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
-.arm-val { font-size: 0.78rem; color: #e6edf3; font-weight: 600; margin-top: 2px; }
-
-/* ---- Activity log ---- */
-.log-section { margin-top: 14px; }
-.log-title { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #8b949e; margin-bottom: 6px; }
+.log-toggle {
+  width: 100%; padding: 8px 20px; background: #161b22; border: none;
+  color: #8b949e; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; cursor: pointer; text-align: left;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.log-toggle:hover { color: #e6edf3; }
+.log-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.log-body.open { max-height: 180px; }
 .log-box {
-  background: #0d1117; border: 1px solid #21262d; border-radius: 8px;
-  height: 160px; overflow-y: auto; padding: 8px;
+  height: 140px; overflow-y: auto; padding: 8px 20px;
   font-family: 'Courier New', monospace; font-size: 0.68rem;
 }
 .log-entry { padding: 2px 0; border-bottom: 1px solid #21262d; display: flex; gap: 8px; }
 .log-entry:last-child { border-bottom: none; }
 .log-time { color: #484f58; flex-shrink: 0; }
-.log-sender { color: #d29922; flex-shrink: 0; min-width: 80px; }
-.log-tag { flex-shrink: 0; min-width: 70px; }
+.log-sender { color: #d29922; flex-shrink: 0; min-width: 70px; }
+.log-tag { flex-shrink: 0; min-width: 65px; }
 .log-content { color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .tag-SCENE { color: #58a6ff; }
 .tag-THREAT { color: #f0883e; }
@@ -467,8 +517,7 @@ h1 { font-size: 1.5rem; letter-spacing: 3px; color: #58a6ff; }
 .tag-REFLEX, .tag-HALT { color: #f85149; font-weight: 700; }
 .tag-REFLEX_EXECUTED { color: #f0883e; }
 .tag-FINAL_COMMAND { color: #388bfd; font-weight: 700; }
-
-.msg-count { font-size: 0.68rem; color: #484f58; text-align: right; margin-top: 4px; }
+.log-footer { padding: 4px 20px 8px; font-size: 0.65rem; color: #484f58; text-align: right; }
 </style>
 </head>
 <body>
@@ -476,423 +525,485 @@ h1 { font-size: 1.5rem; letter-spacing: 3px; color: #58a6ff; }
 <div class="header">
   <div>
     <h1>⚡ BAYMAX</h1>
-    <div class="subtitle">Live Multi-Agent Pipeline — UC Berkeley AI Hackathon 2026</div>
+    <div class="subtitle">Nervous System fMRI — UC Berkeley AI Hackathon 2026</div>
   </div>
-  <div style="display:flex;align-items:center;gap:16px;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="path-badge" class="path-badge" style="display:none;"></span>
     <div id="latency-box" style="text-align:right;display:none;">
-      <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:#8b949e;">End-to-End Latency</div>
-      <div style="display:flex;align-items:baseline;gap:4px;">
-        <span id="latency-value" style="font-size:1.8rem;font-weight:800;color:#58a6ff;font-family:monospace;">—</span>
-        <span style="font-size:0.8rem;color:#8b949e;">ms</span>
+      <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;color:#8b949e;">E2E Latency</div>
+      <div style="display:flex;align-items:baseline;gap:4px;justify-content:flex-end;">
+        <span id="latency-value" style="font-size:1.4rem;font-weight:800;color:#58a6ff;font-family:monospace;">—</span>
+        <span style="font-size:0.75rem;color:#8b949e;">ms</span>
       </div>
-      <canvas id="latency-spark" width="120" height="24" style="display:block;margin-top:2px;"></canvas>
+      <canvas id="latency-spark" width="100" height="20" style="display:block;margin-top:2px;"></canvas>
     </div>
     <span id="conn-badge" class="badge grey">Connecting…</span>
   </div>
 </div>
 
-<div class="main">
+<div class="stage-wrap">
+  <div class="robot-stage" id="robot-stage">
 
-  <!-- LEFT: Pipeline -->
-  <div class="pipeline">
-
-    <!-- Row 1: Vision + Threat -->
-    <div class="row">
-      <div class="card" id="card-vision">
-        <div class="card-title">👁 Vision Agent</div>
-        <div class="card-main" id="v-hazard">—</div>
-        <div class="card-sub" id="v-summary">Waiting for scene…</div>
-        <div class="card-sub" id="v-terrain"></div>
-        <div class="card-thinking" id="v-thinking"></div>
-        <div class="card-ts" id="v-ts"></div>
-      </div>
-      <div class="card" id="card-threat">
-        <div class="card-title">⚠️ Threat Agent</div>
-        <div class="card-main" id="t-level">—</div>
-        <div class="card-sub" id="t-desc">—</div>
-        <div class="card-thinking" id="t-thinking"></div>
-        <div class="card-ts" id="t-ts"></div>
-      </div>
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <!-- Row 2: Conductor -->
-    <div class="row">
-      <div class="card" id="card-conductor">
-        <div class="card-title">🧠 Conductor (Prefrontal Cortex)</div>
-        <div class="card-main" id="c-decision">—</div>
-        <div class="card-sub" id="c-reason">—</div>
-        <div class="card-thinking" id="c-thinking"></div>
-        <div class="card-ts" id="c-ts"></div>
-      </div>
-    </div>
-
-    <div class="arrow">↓  dispatches simultaneously  ↓</div>
-
-    <!-- Row 3: Upper Left, Lower, Upper Right -->
-    <div class="row">
-      <div class="card" id="card-upperleft">
-        <div class="card-title">💪 Upper Left</div>
-        <div class="card-main" id="ul-arm">—</div>
-        <div class="card-sub" id="ul-free"></div>
-        <div class="card-thinking" id="ul-thinking"></div>
-        <div class="card-ts" id="ul-ts"></div>
-      </div>
-      <div class="card" id="card-lower">
-        <div class="card-title">🦵 Lower Body</div>
-        <div class="card-main" id="lo-gait">—</div>
-        <div class="card-sub" id="lo-pace"></div>
-        <div class="card-thinking" id="lo-thinking"></div>
-        <div class="card-ts" id="lo-ts"></div>
-      </div>
-      <div class="card" id="card-upperright">
-        <div class="card-title">💪 Upper Right</div>
-        <div class="card-main" id="ur-arm">—</div>
-        <div class="card-sub" id="ur-free"></div>
-        <div class="card-thinking" id="ur-thinking"></div>
-        <div class="card-ts" id="ur-ts"></div>
-      </div>
-    </div>
-
-    <div class="arrow">↓  safety review  ↓</div>
-
-    <!-- Row 4: Safety + Spine -->
-    <div class="row">
-      <div class="card" id="card-safety">
-        <div class="card-title">🛡 Safety Agent</div>
-        <div class="card-main" id="s-status">—</div>
-        <div class="card-sub" id="s-reason">—</div>
-        <div class="card-thinking" id="s-thinking"></div>
-        <div class="card-ts" id="s-ts"></div>
-      </div>
-      <div class="card" id="card-spine">
-        <div class="card-title">⚡ Spine (Reflex)</div>
-        <div class="card-main" id="sp-status">Standby</div>
-        <div class="card-thinking" id="sp-thinking"></div>
-        <div class="card-ts" id="sp-ts"></div>
-      </div>
-    </div>
-
-    <div class="arrow">↓</div>
-
-    <!-- Final Command -->
-    <div class="final-bar" id="card-final">
-      <div class="final-label">🤖 Final Command → Robot</div>
-      <div class="final-command" id="f-command">Waiting…</div>
-      <div class="card-sub" id="f-reason" style="color:#8b949e;font-size:0.75rem;">—</div>
-      <div class="final-grid">
-        <div class="fi"><div class="fi-label">Left Arm</div><div class="fi-val" id="f-left">—</div></div>
-        <div class="fi"><div class="fi-label">Right Arm</div><div class="fi-val" id="f-right">—</div></div>
-        <div class="fi"><div class="fi-label">Free Arm</div><div class="fi-val" id="f-free">—</div></div>
-        <div class="fi"><div class="fi-label">Gait</div><div class="fi-val" id="f-gait">—</div></div>
-      </div>
-      <div class="card-ts" id="f-ts" style="margin-top:8px;"></div>
-    </div>
-
-    <!-- Activity Log -->
-    <div class="log-section">
-      <div class="log-title">Band Message Log</div>
-      <div class="log-box" id="log-box"></div>
-      <div class="msg-count" id="msg-count">messages seen: 0</div>
-    </div>
-
-  </div>
-
-  <!-- RIGHT: Robot Visualization -->
-  <div class="robot-panel">
-    <h2>Robot State</h2>
-
-    <svg id="robot-svg" viewBox="0 0 200 320" xmlns="http://www.w3.org/2000/svg">
+    <svg id="robot-svg" viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
+        <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1c2a3e"/><stop offset="100%" stop-color="#0f1923"/>
+        </linearGradient>
       </defs>
+      <ellipse cx="200" cy="300" rx="90" ry="160" fill="#0d2f5e" opacity="0.25"/>
 
-      <!-- Body glow bg -->
-      <ellipse cx="100" cy="160" rx="28" ry="55" fill="#0d2f5e" opacity="0.5"/>
+      <!-- Spine (back channel) -->
+      <g id="zone-spine" class="zone-glow">
+        <line x1="228" y1="130" x2="228" y2="400" stroke="#f85149" stroke-width="3" opacity="0.25" stroke-linecap="round"/>
+        <line x1="228" y1="130" x2="228" y2="400" stroke="#f85149" stroke-width="1" opacity="0.5" stroke-dasharray="6 8" id="spine-channel"/>
+      </g>
+
+      <!-- Lower body / legs -->
+      <g id="zone-lower" class="zone-glow">
+        <rect x="155" y="340" width="90" height="28" rx="8" fill="#21262d" stroke="#30363d" stroke-width="1.2"/>
+        <g id="leg-left">
+          <rect x="158" y="368" width="32" height="72" rx="10" fill="url(#bodyGrad)" stroke="#30363d" stroke-width="1.2"/>
+          <rect x="158" y="438" width="32" height="64" rx="8" fill="url(#bodyGrad)" stroke="#30363d" stroke-width="1.2"/>
+          <rect x="150" y="498" width="48" height="14" rx="6" fill="#21262d" stroke="#30363d"/>
+        </g>
+        <g id="leg-right">
+          <rect x="210" y="368" width="32" height="72" rx="10" fill="url(#bodyGrad)" stroke="#30363d" stroke-width="1.2"/>
+          <rect x="210" y="438" width="32" height="64" rx="8" fill="url(#bodyGrad)" stroke="#30363d" stroke-width="1.2"/>
+          <rect x="202" y="498" width="48" height="14" rx="6" fill="#21262d" stroke="#30363d"/>
+        </g>
+      </g>
 
       <!-- Torso -->
-      <rect x="72" y="110" width="56" height="70" rx="10" fill="#1c2a3e" stroke="#388bfd" stroke-width="1.5"/>
-      <!-- Chest light -->
-      <circle cx="100" cy="138" r="8" fill="#0d2f5e" stroke="#58a6ff" stroke-width="1.5" filter="url(#glow)" id="chest-light"/>
+      <g id="zone-torso" class="zone-glow">
+        <rect x="140" y="200" width="120" height="145" rx="16" fill="url(#bodyGrad)" stroke="#388bfd" stroke-width="1.8"/>
+        <circle cx="200" cy="260" r="18" fill="#0d2f5e" stroke="#58a6ff" stroke-width="2" filter="url(#glow)" id="chest-light"/>
+        <circle cx="200" cy="260" r="28" fill="none" stroke="#d2a8ff" stroke-width="1" opacity="0.4" id="conductor-ring"/>
+      </g>
+
+      <!-- Left arm -->
+      <g id="zone-arm-left" class="zone-glow">
+        <g id="arm-left" transform="rotate(0, 120, 220)">
+          <rect x="55" y="212" width="65" height="18" rx="8" fill="url(#bodyGrad)" stroke="#58a6ff" stroke-width="1.4"/>
+          <circle cx="58" cy="221" r="7" fill="#21262d" stroke="#388bfd"/>
+          <rect x="18" y="216" width="42" height="12" rx="6" fill="url(#bodyGrad)" stroke="#388bfd"/>
+          <circle cx="14" cy="222" r="9" fill="#1c2a3e" stroke="#58a6ff" stroke-width="1.4" filter="url(#glow)"/>
+        </g>
+      </g>
+
+      <!-- Right arm -->
+      <g id="zone-arm-right" class="zone-glow">
+        <g id="arm-right" transform="rotate(0, 280, 220)">
+          <rect x="280" y="212" width="65" height="18" rx="8" fill="url(#bodyGrad)" stroke="#58a6ff" stroke-width="1.4"/>
+          <circle cx="342" cy="221" r="7" fill="#21262d" stroke="#388bfd"/>
+          <rect x="340" y="216" width="42" height="12" rx="6" fill="url(#bodyGrad)" stroke="#388bfd"/>
+          <circle cx="386" cy="222" r="9" fill="#1c2a3e" stroke="#58a6ff" stroke-width="1.4" filter="url(#glow)"/>
+        </g>
+      </g>
+
+      <!-- Neck -->
+      <g id="zone-neck" class="zone-glow">
+        <rect x="182" y="168" width="36" height="34" rx="6" fill="#21262d" stroke="#f0883e" stroke-width="1.2" opacity="0.9"/>
+      </g>
 
       <!-- Head -->
-      <rect x="80" y="76" width="40" height="34" rx="8" fill="#1c2a3e" stroke="#388bfd" stroke-width="1.5"/>
-      <!-- Eyes -->
-      <circle cx="91" cy="91" r="4" fill="#58a6ff" filter="url(#glow)" id="eye-l"/>
-      <circle cx="109" cy="91" r="4" fill="#58a6ff" filter="url(#glow)" id="eye-r"/>
-      <!-- Neck -->
-      <rect x="94" y="108" width="12" height="5" rx="2" fill="#21262d"/>
-
-      <!-- LEFT ARM group (rotates at shoulder = 72,120) -->
-      <g id="arm-left" transform="rotate(0, 72, 125)">
-        <!-- upper arm -->
-        <rect x="48" y="118" width="24" height="12" rx="5" fill="#1c2a3e" stroke="#58a6ff" stroke-width="1.2"/>
-        <!-- elbow joint -->
-        <circle cx="50" cy="124" r="4" fill="#21262d" stroke="#388bfd" stroke-width="1"/>
-        <!-- forearm -->
-        <rect x="26" y="120" width="24" height="8" rx="4" fill="#1c2a3e" stroke="#388bfd" stroke-width="1"/>
-        <!-- hand -->
-        <circle cx="24" cy="124" r="5" fill="#1c2a3e" stroke="#58a6ff" stroke-width="1.2" filter="url(#glow)"/>
+      <g id="zone-head" class="zone-glow">
+        <rect x="155" y="55" width="90" height="78" rx="20" fill="url(#bodyGrad)" stroke="#388bfd" stroke-width="1.8"/>
+        <rect x="168" y="78" width="64" height="12" rx="4" fill="#0d1117" stroke="#58a6ff" stroke-width="1" opacity="0.8"/>
+        <circle cx="178" cy="84" r="3" fill="#58a6ff" filter="url(#glow)" id="eye-l"/>
+        <circle cx="222" cy="84" r="3" fill="#58a6ff" filter="url(#glow)" id="eye-r"/>
       </g>
 
-      <!-- RIGHT ARM group (rotates at shoulder = 128,120) -->
-      <g id="arm-right" transform="rotate(0, 128, 125)">
-        <rect x="128" y="118" width="24" height="12" rx="5" fill="#1c2a3e" stroke="#58a6ff" stroke-width="1.2"/>
-        <circle cx="150" cy="124" r="4" fill="#21262d" stroke="#388bfd" stroke-width="1"/>
-        <rect x="150" y="120" width="24" height="8" rx="4" fill="#1c2a3e" stroke="#388bfd" stroke-width="1"/>
-        <circle cx="176" cy="124" r="5" fill="#1c2a3e" stroke="#58a6ff" stroke-width="1.2" filter="url(#glow)"/>
-      </g>
-
-      <!-- Hips -->
-      <rect x="76" y="178" width="48" height="12" rx="5" fill="#21262d" stroke="#30363d" stroke-width="1"/>
-
-      <!-- LEFT LEG -->
-      <g id="leg-left">
-        <rect x="78" y="190" width="20" height="40" rx="6" fill="#1c2a3e" stroke="#30363d" stroke-width="1"/>
-        <rect x="78" y="228" width="20" height="32" rx="5" fill="#1c2a3e" stroke="#30363d" stroke-width="1"/>
-        <rect x="73" y="256" width="28" height="8" rx="4" fill="#21262d" stroke="#30363d" stroke-width="1"/>
-      </g>
-
-      <!-- RIGHT LEG -->
-      <g id="leg-right">
-        <rect x="102" y="190" width="20" height="40" rx="6" fill="#1c2a3e" stroke="#30363d" stroke-width="1"/>
-        <rect x="102" y="228" width="20" height="32" rx="5" fill="#1c2a3e" stroke="#30363d" stroke-width="1"/>
-        <rect x="99" y="256" width="28" height="8" rx="4" fill="#21262d" stroke="#30363d" stroke-width="1"/>
-      </g>
-
-      <!-- Status text -->
-      <text id="robot-status-text" x="100" y="292" text-anchor="middle" font-size="10" fill="#8b949e" font-family="monospace">STANDBY</text>
+      <text id="robot-status-text" x="200" y="545" text-anchor="middle" font-size="11" fill="#8b949e" font-family="monospace">STANDBY</text>
     </svg>
 
-    <div style="width:100%;text-align:center;">
-      <div class="cmd-label">Command</div>
-      <div class="cmd-value" id="r-command">—</div>
+    <svg id="link-layer" viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg"></svg>
+
+    <!-- Agent panels -->
+    <div class="agent-panel panel-vision" id="panel-vision" data-agent="vision">
+      <div class="panel-header"><span class="panel-dot" id="dot-vision"></span><span class="panel-name">Vision</span></div>
+      <div class="panel-region">Sensory Cortex · Head</div>
+      <div class="panel-action hazard-NONE" id="pa-vision-action">—</div>
+      <div class="panel-sub" id="pa-vision-sub">Waiting for scene…</div>
+      <div class="panel-thinking" id="pa-vision-thinking"></div>
+      <div class="panel-ts" id="pa-vision-ts"></div>
+    </div>
+    <div class="agent-panel panel-threat" id="panel-threat" data-agent="threat">
+      <div class="panel-header"><span class="panel-dot" id="dot-threat"></span><span class="panel-name">Threat</span></div>
+      <div class="panel-region">Amygdala · Neck</div>
+      <div class="panel-action" id="pa-threat-action">—</div>
+      <div class="panel-sub" id="pa-threat-sub"></div>
+      <div class="panel-thinking" id="pa-threat-thinking"></div>
+      <div class="panel-ts" id="pa-threat-ts"></div>
+    </div>
+    <div class="agent-panel panel-conductor" id="panel-conductor" data-agent="conductor">
+      <div class="panel-header"><span class="panel-dot" id="dot-conductor"></span><span class="panel-name">Conductor</span></div>
+      <div class="panel-region">Prefrontal Cortex · Torso</div>
+      <div class="panel-action" id="pa-conductor-action">—</div>
+      <div class="panel-sub" id="pa-conductor-sub"></div>
+      <div class="panel-thinking" id="pa-conductor-thinking"></div>
+      <div class="panel-ts" id="pa-conductor-ts"></div>
+    </div>
+    <div class="agent-panel panel-upper_left" id="panel-upper_left" data-agent="upper_left">
+      <div class="panel-header"><span class="panel-dot" id="dot-upper_left"></span><span class="panel-name">Upper Left</span></div>
+      <div class="panel-region">Motor Cortex L · Left Arm</div>
+      <div class="panel-action" id="pa-upper_left-action">—</div>
+      <div class="panel-sub" id="pa-upper_left-sub"></div>
+      <div class="panel-thinking" id="pa-upper_left-thinking"></div>
+      <div class="panel-ts" id="pa-upper_left-ts"></div>
+    </div>
+    <div class="agent-panel panel-upper_right" id="panel-upper_right" data-agent="upper_right">
+      <div class="panel-header"><span class="panel-dot" id="dot-upper_right"></span><span class="panel-name">Upper Right</span></div>
+      <div class="panel-region">Motor Cortex R · Right Arm</div>
+      <div class="panel-action" id="pa-upper_right-action">—</div>
+      <div class="panel-sub" id="pa-upper_right-sub"></div>
+      <div class="panel-thinking" id="pa-upper_right-thinking"></div>
+      <div class="panel-ts" id="pa-upper_right-ts"></div>
+    </div>
+    <div class="agent-panel panel-lower" id="panel-lower" data-agent="lower">
+      <div class="panel-header"><span class="panel-dot" id="dot-lower"></span><span class="panel-name">Lower</span></div>
+      <div class="panel-region">Cerebellum · Legs</div>
+      <div class="panel-action" id="pa-lower-action">—</div>
+      <div class="panel-sub" id="pa-lower-sub"></div>
+      <div class="panel-thinking" id="pa-lower-thinking"></div>
+      <div class="panel-ts" id="pa-lower-ts"></div>
+    </div>
+    <div class="agent-panel panel-spine" id="panel-spine" data-agent="spine">
+      <div class="panel-header"><span class="panel-dot" id="dot-spine"></span><span class="panel-name">Spine</span></div>
+      <div class="panel-region">Spinal Cord · Reflex</div>
+      <div class="panel-action" id="pa-spine-action">Standby</div>
+      <div class="panel-sub" id="pa-spine-sub"></div>
+      <div class="panel-thinking" id="pa-spine-thinking"></div>
+      <div class="panel-ts" id="pa-spine-ts"></div>
+    </div>
+    <div class="agent-panel panel-safety" id="panel-safety" data-agent="safety">
+      <div class="panel-header"><span class="panel-dot" id="dot-safety"></span><span class="panel-name">Safety</span></div>
+      <div class="panel-region">Brainstem · Shield</div>
+      <div class="panel-action" id="pa-safety-action">—</div>
+      <div class="panel-sub" id="pa-safety-sub"></div>
+      <div class="panel-thinking" id="pa-safety-thinking"></div>
+      <div class="panel-ts" id="pa-safety-ts"></div>
     </div>
 
-    <div class="arm-grid">
-      <div class="arm-item">
-        <div class="arm-lbl">Left Arm</div>
-        <div class="arm-val" id="r-left">—</div>
-      </div>
-      <div class="arm-item">
-        <div class="arm-lbl">Right Arm</div>
-        <div class="arm-val" id="r-right">—</div>
-      </div>
-      <div class="arm-item">
-        <div class="arm-lbl">Free Arm</div>
-        <div class="arm-val" id="r-free">—</div>
-      </div>
-      <div class="arm-item">
-        <div class="arm-lbl">Gait</div>
-        <div class="arm-val" id="r-gait">—</div>
+    <div class="cmd-strip" id="cmd-strip">
+      <div class="cmd-strip-label">Final Command → Robot</div>
+      <div class="cmd-strip-main" id="cmd-main">Waiting…</div>
+      <div class="cmd-strip-sub" id="cmd-sub">—</div>
+      <div class="cmd-strip-grid">
+        <div class="cmd-strip-item">L: <span id="cmd-left">—</span></div>
+        <div class="cmd-strip-item">R: <span id="cmd-right">—</span></div>
+        <div class="cmd-strip-item">Free: <span id="cmd-free">—</span></div>
+        <div class="cmd-strip-item">Gait: <span id="cmd-gait">—</span></div>
       </div>
     </div>
   </div>
 
+  <div class="log-drawer">
+    <button class="log-toggle" id="log-toggle" type="button">
+      <span>Band Message Log</span>
+      <span id="log-chevron">▼</span>
+    </button>
+    <div class="log-body" id="log-body">
+      <div class="log-box" id="log-box"></div>
+      <div class="log-footer" id="msg-count">messages seen: 0</div>
+    </div>
+  </div>
 </div>
 
 <script>
-// ---- Arm rotation angles per action (degrees at shoulder pivot) ----
-// Left arm: positive = arm goes up, negative = arm goes down
-// For left arm group pivoting at (72,125): rotate(deg, 72, 125)
-// For right arm group pivoting at (128,125): rotate(deg, 128, 125)
 const ARM_ANGLES = {
-  "HOLD_STEADY":        { l: 0,    r: 0 },
-  "GENTLE_LEFT_PULL":   { l: -40,  r: -15 },
-  "GENTLE_RIGHT_PULL":  { l: -15,  r: 40 },
-  "FORWARD_PUSH":       { l: -70,  r: 70 },
-  "RELEASE":            { l: 20,   r: -20 },
-  "HALT_EXTEND":        { l: -90,  r: 90 },
+  "HOLD_STEADY": { l: 0, r: 0 },
+  "GENTLE_LEFT_PULL": { l: -40, r: -15 },
+  "GENTLE_RIGHT_PULL": { l: -15, r: 40 },
+  "FORWARD_PUSH": { l: -70, r: 70 },
+  "RELEASE": { l: 20, r: -20 },
+  "HALT_EXTEND": { l: -90, r: 90 },
+};
+const L_PIVOT = [120, 220], R_PIVOT = [280, 220];
+
+const AGENT_ANCHORS = {
+  vision:      { x: 50, y: 10,  panelSide: 'center' },
+  threat:      { x: 50, y: 22,  panelSide: 'right' },
+  conductor:   { x: 50, y: 38,  panelSide: 'left' },
+  upper_left:  { x: 8,  y: 38,  panelSide: 'left' },
+  upper_right: { x: 92, y: 38,  panelSide: 'right' },
+  lower:       { x: 50, y: 78,  panelSide: 'center' },
+  spine:       { x: 78, y: 42,  panelSide: 'right' },
+  safety:      { x: 22, y: 38,  panelSide: 'left' },
 };
 
-const LEG_ANIM = {
-  "WALK_NORMAL": true,
-  "WALK_SLOW": true,
-  "STEP_HIGH": true,
-  "STEP_DOWN": true,
+const LINK_DEFS = [
+  { from: 'vision', to: 'conductor', tags: ['SCENE'], peer: false },
+  { from: 'vision', to: 'threat', tags: ['SCENE'], peer: false },
+  { from: 'threat', to: 'spine', tags: ['REFLEX', 'THREAT'], peer: false },
+  { from: 'threat', to: 'conductor', tags: ['THREAT'], peer: false },
+  { from: 'conductor', to: 'upper_left', tags: ['TASK'], peer: false },
+  { from: 'conductor', to: 'upper_right', tags: ['TASK'], peer: false },
+  { from: 'conductor', to: 'lower', tags: ['TASK'], peer: false },
+  { from: 'upper_left', to: 'lower', tags: ['READY'], peer: true },
+  { from: 'upper_right', to: 'lower', tags: ['READY'], peer: true },
+  { from: 'upper_left', to: 'safety', tags: ['READY'], peer: false },
+  { from: 'upper_right', to: 'safety', tags: ['READY'], peer: false },
+  { from: 'lower', to: 'safety', tags: ['READY'], peer: false },
+  { from: 'safety', to: 'conductor', tags: ['APPROVED', 'VETOED'], peer: false },
+  { from: 'spine', to: 'upper_left', tags: ['REFLEX', 'HALT'], peer: false },
+  { from: 'spine', to: 'upper_right', tags: ['REFLEX', 'HALT'], peer: false },
+  { from: 'spine', to: 'lower', tags: ['REFLEX', 'HALT'], peer: false },
+];
+
+const ZONE_MAP = {
+  vision: 'zone-head', threat: 'zone-neck', conductor: 'zone-torso',
+  upper_left: 'zone-arm-left', upper_right: 'zone-arm-right',
+  lower: 'zone-lower', spine: 'zone-spine', safety: 'zone-torso',
 };
 
-// Smooth arm lerp state
-let currentLAngle = 0, currentRAngle = 0;
-let targetLAngle = 0, targetRAngle = 0;
-let legPhase = 0, legAnimating = false;
-let lastTs = 0;
+let currentLAngle = 0, currentRAngle = 0, targetLAngle = 0, targetRAngle = 0;
+let legPhase = 0, legAnimating = false, lastAnimTs = 0;
+let prevAgentTs = {}, linkEls = {};
 
 function lerp(a, b, t) { return a + (b - a) * t; }
+function ts(ms) { return ms ? new Date(ms).toLocaleTimeString() : ''; }
+function hazardClass(h) { return 'hazard-' + (h || 'NONE'); }
+
+function svgPoint(agent) {
+  const a = AGENT_ANCHORS[agent];
+  return { x: a.x * 4, y: a.y * 6 };
+}
+
+function buildLinks() {
+  const layer = document.getElementById('link-layer');
+  layer.innerHTML = '';
+  linkEls = {};
+  LINK_DEFS.forEach((def, i) => {
+    const p1 = svgPoint(def.from), p2 = svgPoint(def.to);
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2 - 20;
+    path.setAttribute('d', `M${p1.x},${p1.y} Q${mx},${my} ${p2.x},${p2.y}`);
+    path.setAttribute('class', 'link-line' + (def.peer ? ' peer' : ''));
+    path.setAttribute('id', 'link-' + i);
+    path.dataset.from = def.from;
+    path.dataset.to = def.to;
+    layer.appendChild(path);
+    linkEls[def.from + '->' + def.to] = path;
+  });
+}
+
+function pulseLink(from, to, color) {
+  const el = linkEls[from + '->' + to];
+  if (!el) return;
+  el.style.stroke = color || '#58a6ff';
+  el.classList.remove('pulse');
+  void el.offsetWidth;
+  el.classList.add('pulse');
+}
+
+function pulseLinksForTag(tag, pathMode) {
+  const color = (pathMode === 'REFLEX' || tag === 'REFLEX' || tag === 'HALT') ? '#f85149' : '#58a6ff';
+  LINK_DEFS.forEach(def => {
+    if (def.tags.includes(tag)) pulseLink(def.from, def.to, color);
+  });
+}
+
+function pulseZone(agent) {
+  const zoneId = ZONE_MAP[agent];
+  if (!zoneId) return;
+  const z = document.getElementById(zoneId);
+  if (!z) return;
+  z.classList.add('active');
+  setTimeout(() => z.classList.remove('active'), 1200);
+}
+
+function positionPanels() {
+  const stage = document.getElementById('robot-stage');
+  const rect = stage.getBoundingClientRect();
+  const svg = document.getElementById('robot-svg');
+  const svgRect = svg.getBoundingClientRect();
+  const offX = svgRect.left - rect.left;
+  const offY = svgRect.top - rect.top;
+
+  Object.entries(AGENT_ANCHORS).forEach(([agent, anchor]) => {
+    const panel = document.getElementById('panel-' + agent);
+    if (!panel) return;
+    const px = offX + (anchor.x / 100) * svgRect.width;
+    const py = offY + (anchor.y / 100) * svgRect.height;
+    let tx = -50, ty = -108;
+    if (anchor.panelSide === 'left') { tx = -90; }
+    else if (anchor.panelSide === 'right') { tx = -10; }
+    panel.style.left = px + 'px';
+    panel.style.top = py + 'px';
+    panel.style.transform = `translate(${tx}%, ${ty}%)`;
+  });
+}
+
+function flashPanel(agent, cls) {
+  const el = document.getElementById('panel-' + agent);
+  if (!el) return;
+  el.classList.remove('flash-red', 'flash-green', 'active');
+  if (cls) el.classList.add(cls);
+  el.classList.add('active');
+  setTimeout(() => { el.classList.remove('active', cls || ''); }, 1000);
+}
+
+function updateAgentPanel(agent, data, opts) {
+  opts = opts || {};
+  const prefix = 'pa-' + agent;
+  const set = (suffix, val) => {
+    const el = document.getElementById(prefix + '-' + suffix);
+    if (el) el.textContent = val || '';
+  };
+  set('thinking', data.thinking);
+  set('ts', data.ts ? ts(data.ts) : '');
+
+  const dot = document.getElementById('dot-' + agent);
+  if (dot) dot.classList.toggle('live', !!data.active);
+
+  if (data.ts && data.ts !== prevAgentTs[agent]) {
+    prevAgentTs[agent] = data.ts;
+    pulseZone(agent);
+    if (data.last_tag) pulseLinksForTag(data.last_tag, opts.pathMode);
+    let flashCls = '';
+    if (agent === 'safety' && data.status === 'VETOED') flashCls = 'flash-red';
+    else if (agent === 'safety' && data.status === 'APPROVED') flashCls = 'flash-green';
+    else if (agent === 'spine') flashCls = 'flash-red';
+    flashPanel(agent, flashCls);
+    if (agent === 'safety') {
+      const safetyPanel = document.getElementById('panel-safety');
+      if (safetyPanel) safetyPanel.classList.toggle('vetoed', data.status === 'VETOED');
+    }
+  }
+}
 
 function animLoop(ts) {
-  const dt = Math.min((ts - lastTs) / 1000, 0.1);
-  lastTs = ts;
+  const dt = Math.min((ts - lastAnimTs) / 1000, 0.1);
+  lastAnimTs = ts;
   const speed = 6;
   currentLAngle = lerp(currentLAngle, targetLAngle, Math.min(speed * dt, 1));
   currentRAngle = lerp(currentRAngle, targetRAngle, Math.min(speed * dt, 1));
-
-  document.getElementById('arm-left').setAttribute('transform', `rotate(${currentLAngle}, 72, 125)`);
-  document.getElementById('arm-right').setAttribute('transform', `rotate(${currentRAngle}, 128, 125)`);
-
+  document.getElementById('arm-left').setAttribute('transform', `rotate(${currentLAngle}, ${L_PIVOT[0]}, ${L_PIVOT[1]})`);
+  document.getElementById('arm-right').setAttribute('transform', `rotate(${currentRAngle}, ${R_PIVOT[0]}, ${R_PIVOT[1]})`);
   if (legAnimating) {
     legPhase += dt * 3;
-    const lStep = Math.sin(legPhase) * 10;
-    const rStep = Math.sin(legPhase + Math.PI) * 10;
+    const lStep = Math.sin(legPhase) * 12;
+    const rStep = Math.sin(legPhase + Math.PI) * 12;
     document.getElementById('leg-left').setAttribute('transform', `translate(0, ${lStep})`);
     document.getElementById('leg-right').setAttribute('transform', `translate(0, ${rStep})`);
   } else {
     document.getElementById('leg-left').setAttribute('transform', 'translate(0,0)');
     document.getElementById('leg-right').setAttribute('transform', 'translate(0,0)');
   }
-
   requestAnimationFrame(animLoop);
 }
-requestAnimationFrame(animLoop);
 
 function setArmTargets(leftAction, rightAction, freeAction) {
-  // If HALT_EXTEND override both arms
-  if (freeAction === 'HALT_EXTEND') {
-    targetLAngle = -90;
-    targetRAngle = 90;
-    return;
-  }
+  if (freeAction === 'HALT_EXTEND') { targetLAngle = -90; targetRAngle = 90; return; }
   const la = ARM_ANGLES[leftAction] || ARM_ANGLES['HOLD_STEADY'];
   const ra = ARM_ANGLES[rightAction] || ARM_ANGLES['HOLD_STEADY'];
-  // Left arm uses left component, right arm uses right component
-  targetLAngle = la.l;
-  targetRAngle = ra.r;
+  targetLAngle = la.l; targetRAngle = ra.r;
 }
 
 function setChestColor(command) {
-  const light = document.getElementById('chest-light');
-  const eyeL = document.getElementById('eye-l');
-  const eyeR = document.getElementById('eye-r');
   const colors = {
-    'EMERGENCY_STOP': '#f85149',
-    'STOP':           '#d29922',
-    'SLOW_DOWN':      '#d2a8ff',
-    'MOVE_FORWARD':   '#3fb950',
-    'GUIDE_LEFT':     '#58a6ff',
-    'GUIDE_RIGHT':    '#58a6ff',
+    'EMERGENCY_STOP': '#f85149', 'STOP': '#d29922', 'SLOW_DOWN': '#d2a8ff',
+    'MOVE_FORWARD': '#3fb950', 'GUIDE_LEFT': '#58a6ff', 'GUIDE_RIGHT': '#58a6ff',
   };
   const c = colors[command] || '#58a6ff';
-  light.setAttribute('fill', c + '33');
-  light.setAttribute('stroke', c);
-  eyeL.setAttribute('fill', c);
-  eyeR.setAttribute('fill', c);
+  document.getElementById('chest-light').setAttribute('fill', c + '33');
+  document.getElementById('chest-light').setAttribute('stroke', c);
+  document.getElementById('eye-l').setAttribute('fill', c);
+  document.getElementById('eye-r').setAttribute('fill', c);
 }
-
-// ---- State update ----
-function ts(ms) {
-  if (!ms) return '';
-  return new Date(ms).toLocaleTimeString();
-}
-function flash(id, cls) {
-  cls = cls || 'flash';
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.add(cls);
-  setTimeout(() => { el.classList.remove('flash'); el.classList.remove('flash-red'); el.classList.remove('flash-green'); }, 900);
-}
-function hazardClass(h) { return 'card-main hazard-' + (h || 'NONE'); }
 
 function update(s) {
+  const pathMode = s.active_path;
+
   // Vision
   const v = s.vision;
-  document.getElementById('v-hazard').textContent = v.hazard || 'NONE';
-  document.getElementById('v-hazard').className = hazardClass(v.hazard);
-  document.getElementById('v-summary').textContent = v.summary || '—';
-  document.getElementById('v-terrain').textContent = v.terrain ? 'Terrain: ' + v.terrain : '';
-  document.getElementById('v-thinking').textContent = v.thinking || '';
-  document.getElementById('v-ts').textContent = v.ts ? ts(v.ts) + (v.latency_ms ? ' · ' + v.latency_ms + 'ms' : '') : '';
-  if (v.ts) flash('card-vision');
+  document.getElementById('pa-vision-action').textContent = v.hazard || 'NONE';
+  document.getElementById('pa-vision-action').className = 'panel-action ' + hazardClass(v.hazard);
+  document.getElementById('pa-vision-sub').textContent = (v.summary || '—') + (v.terrain && v.terrain !== '—' ? ' · ' + v.terrain : '');
+  updateAgentPanel('vision', v, { pathMode });
 
   // Threat
   const t = s.threat;
-  document.getElementById('t-level').textContent = t.level || '—';
-  document.getElementById('t-level').className = hazardClass(t.level);
-  document.getElementById('t-desc').textContent = t.description || '—';
-  document.getElementById('t-thinking').textContent = t.thinking || '';
-  document.getElementById('t-ts').textContent = t.ts ? ts(t.ts) : '';
-  if (t.ts) flash('card-threat');
+  document.getElementById('pa-threat-action').textContent = t.level || '—';
+  document.getElementById('pa-threat-action').className = 'panel-action ' + hazardClass(t.level);
+  document.getElementById('pa-threat-sub').textContent = t.description || '—';
+  updateAgentPanel('threat', t, { pathMode });
 
   // Conductor
   const c = s.conductor;
-  document.getElementById('c-decision').textContent = c.decision || '—';
-  document.getElementById('c-reason').textContent = c.reason || '—';
-  document.getElementById('c-thinking').textContent = c.thinking || '';
-  document.getElementById('c-ts').textContent = c.ts ? ts(c.ts) : '';
-  if (c.ts) flash('card-conductor');
+  document.getElementById('pa-conductor-action').textContent = c.decision || '—';
+  document.getElementById('pa-conductor-sub').textContent = c.reason || '—';
+  updateAgentPanel('conductor', c, { pathMode });
 
   // Upper Left
   const ul = s.upper_left;
-  document.getElementById('ul-arm').textContent = ul.arm_action || '—';
-  document.getElementById('ul-free').textContent = ul.free_arm ? 'Free: ' + ul.free_arm : '';
-  document.getElementById('ul-thinking').textContent = ul.thinking || '';
-  document.getElementById('ul-ts').textContent = ul.ts ? ts(ul.ts) : '';
-  if (ul.ts) flash('card-upperleft');
+  document.getElementById('pa-upper_left-action').textContent = ul.arm_action || '—';
+  document.getElementById('pa-upper_left-sub').textContent = ul.free_arm && ul.free_arm !== '—' ? 'Free: ' + ul.free_arm : '';
+  updateAgentPanel('upper_left', ul, { pathMode });
 
   // Upper Right
   const ur = s.upper_right;
-  document.getElementById('ur-arm').textContent = ur.arm_action || '—';
-  document.getElementById('ur-free').textContent = ur.free_arm ? 'Free: ' + ur.free_arm : '';
-  document.getElementById('ur-thinking').textContent = ur.thinking || '';
-  document.getElementById('ur-ts').textContent = ur.ts ? ts(ur.ts) : '';
-  if (ur.ts) flash('card-upperright');
+  document.getElementById('pa-upper_right-action').textContent = ur.arm_action || '—';
+  document.getElementById('pa-upper_right-sub').textContent = ur.free_arm && ur.free_arm !== '—' ? 'Free: ' + ur.free_arm : '';
+  updateAgentPanel('upper_right', ur, { pathMode });
 
   // Lower
   const lo = s.lower;
-  document.getElementById('lo-gait').textContent = lo.gait_action || '—';
-  document.getElementById('lo-pace').textContent = lo.pace_ms ? lo.pace_ms + 'ms pace' : '';
-  document.getElementById('lo-thinking').textContent = lo.thinking || '';
-  document.getElementById('lo-ts').textContent = lo.ts ? ts(lo.ts) : '';
-  if (lo.ts) flash('card-lower');
+  document.getElementById('pa-lower-action').textContent = lo.gait_action || '—';
+  document.getElementById('pa-lower-sub').textContent = lo.pace_ms ? lo.pace_ms + 'ms pace' : '';
+  updateAgentPanel('lower', lo, { pathMode });
   legAnimating = !!(lo.gait_action && lo.gait_action !== '—' && lo.gait_action !== 'HALT' && lo.gait_action !== 'PAUSE');
 
   // Safety
   const sa = s.safety;
-  document.getElementById('s-status').textContent = sa.status || '—';
-  document.getElementById('s-status').className = 'card-main status-' + (sa.status || '');
-  document.getElementById('s-reason').textContent = sa.reason || '—';
-  document.getElementById('s-thinking').textContent = sa.thinking || '';
-  document.getElementById('s-ts').textContent = sa.ts ? ts(sa.ts) : '';
-  if (sa.ts) {
-    flash('card-safety', sa.status === 'VETOED' ? 'flash-red' : 'flash-green');
-  }
+  document.getElementById('pa-safety-action').textContent = sa.status || '—';
+  document.getElementById('pa-safety-action').className = 'panel-action status-' + (sa.status || '');
+  document.getElementById('pa-safety-sub').textContent = sa.reason || '—';
+  updateAgentPanel('safety', sa, { pathMode });
+  document.getElementById('panel-safety').classList.toggle('vetoed', sa.status === 'VETOED');
 
   // Spine
   const sp = s.spine;
-  document.getElementById('sp-status').textContent = sp.status || 'Standby';
-  document.getElementById('sp-thinking').textContent = sp.thinking || '';
-  document.getElementById('sp-ts').textContent = sp.ts ? ts(sp.ts) : '';
-  if (sp.ts) flash('card-spine', 'flash-red');
+  document.getElementById('pa-spine-action').textContent = sp.status || 'Standby';
+  document.getElementById('pa-spine-sub').textContent = '';
+  updateAgentPanel('spine', sp, { pathMode });
+  const spineCh = document.getElementById('spine-channel');
+  if (spineCh) spineCh.setAttribute('opacity', sp.active ? '1' : '0.5');
 
-  // Final command
+  // Final command strip
   const f = s.final_command;
-  document.getElementById('f-command').textContent = f.command || 'Waiting…';
-  document.getElementById('f-reason').textContent = f.reason || '—';
-  document.getElementById('f-left').textContent = f.left_arm || '—';
-  document.getElementById('f-right').textContent = f.right_arm || '—';
-  document.getElementById('f-free').textContent = f.free_arm || '—';
-  document.getElementById('f-gait').textContent = f.gait || '—';
-  document.getElementById('f-ts').textContent = f.ts ? 'Sent ' + ts(f.ts) + ' · path: ' + (f.path || '—') : '';
-  if (f.ts) flash('card-final');
-
-  // Robot panel
-  document.getElementById('r-command').textContent = f.command || '—';
-  document.getElementById('r-left').textContent = f.left_arm || '—';
-  document.getElementById('r-right').textContent = f.right_arm || '—';
-  document.getElementById('r-free').textContent = f.free_arm || '—';
-  document.getElementById('r-gait').textContent = f.gait || '—';
+  document.getElementById('cmd-main').textContent = f.command || 'Waiting…';
+  document.getElementById('cmd-sub').textContent = f.reason || '—';
+  document.getElementById('cmd-left').textContent = f.left_arm || '—';
+  document.getElementById('cmd-right').textContent = f.right_arm || '—';
+  document.getElementById('cmd-free').textContent = f.free_arm || '—';
+  document.getElementById('cmd-gait').textContent = f.gait || '—';
   document.getElementById('robot-status-text').textContent = f.command || 'STANDBY';
+  if (f.ts) {
+    const strip = document.getElementById('cmd-strip');
+    strip.classList.add('flash');
+    setTimeout(() => strip.classList.remove('flash'), 900);
+    pulseLinksForTag('FINAL_COMMAND', f.path);
+  }
   if (f.command && f.command !== '—') {
     setArmTargets(f.left_arm, f.right_arm, f.free_arm);
     setChestColor(f.command);
   }
 
+  // Path badge
+  const pb = document.getElementById('path-badge');
+  if (pathMode === 'CORTICAL' || pathMode === 'REFLEX') {
+    pb.style.display = 'inline-block';
+    pb.textContent = pathMode + ' PATH';
+    pb.className = 'path-badge path-' + pathMode;
+  } else {
+    pb.style.display = 'none';
+  }
+
   // Log
   const box = document.getElementById('log-box');
-  const atBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 10;
+  const atTop = box.scrollTop < 10;
   box.innerHTML = (s.log || []).slice().reverse().map(e =>
     `<div class="log-entry">
       <span class="log-time">${new Date(e.ts).toLocaleTimeString()}</span>
@@ -901,24 +1012,21 @@ function update(s) {
       <span class="log-content">${e.content.replace(/</g,'&lt;')}</span>
     </div>`
   ).join('');
-  if (atBottom) box.scrollTop = 0; // newest at top since we reversed
-
+  if (atTop) box.scrollTop = 0;
   document.getElementById('msg-count').textContent = 'messages seen: ' + (s.message_count || 0);
 
-  // Latency display
+  // Latency
   if (s.pipeline_latency_ms != null) {
-    const box = document.getElementById('latency-box');
-    box.style.display = 'block';
+    document.getElementById('latency-box').style.display = 'block';
     const val = document.getElementById('latency-value');
     val.textContent = s.pipeline_latency_ms;
-    // color-code: green <3s, yellow <6s, red >=6s
     val.style.color = s.pipeline_latency_ms < 3000 ? '#3fb950' : s.pipeline_latency_ms < 6000 ? '#d29922' : '#f85149';
     drawSparkline(s.latency_history || []);
   }
 
   const badge = document.getElementById('conn-badge');
   if (s.connected) { badge.textContent = '● Live'; badge.className = 'badge green'; }
-  else { badge.textContent = '○ Waiting for Band credentials'; badge.className = 'badge grey'; }
+  else { badge.textContent = '○ Waiting for Band'; badge.className = 'badge grey'; }
 }
 
 function drawSparkline(history) {
@@ -932,19 +1040,22 @@ function drawSparkline(history) {
   ctx.strokeStyle = '#58a6ff88';
   ctx.lineWidth = 1.5;
   history.forEach((v, i) => {
-    const x = i * w;
-    const y = canvas.height - (v / max) * (canvas.height - 2) - 1;
+    const x = i * w, y = canvas.height - (v / max) * (canvas.height - 2) - 1;
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
   ctx.stroke();
-  // dot at latest
-  const lx = (history.length - 1) * w;
-  const ly = canvas.height - (history[history.length-1] / max) * (canvas.height - 2) - 1;
-  ctx.beginPath();
-  ctx.arc(lx, ly, 2.5, 0, Math.PI * 2);
-  ctx.fillStyle = '#58a6ff';
-  ctx.fill();
 }
+
+document.getElementById('log-toggle').addEventListener('click', () => {
+  const body = document.getElementById('log-body');
+  const open = body.classList.toggle('open');
+  document.getElementById('log-chevron').textContent = open ? '▲' : '▼';
+});
+
+buildLinks();
+positionPanels();
+window.addEventListener('resize', positionPanels);
+requestAnimationFrame(animLoop);
 
 const es = new EventSource('/events');
 es.onmessage = e => { try { update(JSON.parse(e.data)); } catch(_) {} };
