@@ -22,6 +22,7 @@ from langchain_core.messages import HumanMessage
 from band.platform.link import BandLink
 from band.platform.event import RoomAddedEvent, MessageEvent
 from band.runtime.tools import AgentTools
+from band.client.rest import DEFAULT_REQUEST_OPTIONS
 from agents.shared.config import WS_URL, REST_URL
 
 # --- Config --------------------------------------------------------------- #
@@ -180,8 +181,11 @@ async def _publish_scene(tools: AgentTools, jpeg_bytes: bytes) -> None:
             content,
             mentions=[CONDUCTOR_HANDLE, THREAT_HANDLE],
         )
+        print("[Vision] Scene posted to Band")
     except Exception as e:
+        import traceback
         print(f"[Vision] Publish error: {e}")
+        traceback.print_exc()
 
 
 async def _webcam_loop(tools: AgentTools) -> None:
@@ -248,13 +252,23 @@ async def main() -> None:
     async for event in link:
         if isinstance(event, RoomAddedEvent):
             room_id = event.room_id
-            print(f"[Vision] Joined room {room_id} — starting vision loop")
-            tools = AgentTools(room_id=room_id, rest=link.rest)
+            print(f"[Vision] Joined room {room_id} — fetching participants...")
+            try:
+                resp = await link.rest.agent_api_participants.list_agent_participants(
+                    chat_id=room_id,
+                    request_options=DEFAULT_REQUEST_OPTIONS,
+                )
+                participants = [p.model_dump(exclude_none=True) for p in (resp.data or [])]
+                print(f"[Vision] {len(participants)} participants in room")
+            except Exception as e:
+                print(f"[Vision] Could not fetch participants: {e} — sending without mentions")
+                participants = None
+
+            tools = AgentTools(room_id=room_id, rest=link.rest, participants=participants)
             if vision_task is None:
                 vision_task = asyncio.create_task(_vision_loop(tools))
 
         # Vision agent doesn't respond to messages — it only publishes.
-        # Ignore all incoming messages.
 
 
 if __name__ == "__main__":
