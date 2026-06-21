@@ -50,6 +50,7 @@ async def main():
         llm=make_llm(),
         checkpointer=InMemorySaver(),
         custom_section=INSTRUCTIONS,
+        recursion_limit=200,
     )
     agent = Agent.create(
         adapter=adapter,
