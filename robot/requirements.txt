@@ -1,0 +1,5 @@
+livekit
+livekit-api
+livekit-portal
+opencv-python
+python-dotenv

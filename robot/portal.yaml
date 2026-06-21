@@ -1,0 +1,37 @@
+# Baymax robot <-> cloud wire contract.
+# Loaded by RobotConfig.from_yaml_file(...) in robot.py.
+# Identity (robot / operator) is supplied at the call site.
+#
+# Hour 1: we only care about the video track (front_camera) so Advaita's
+# Vision Agent can subscribe. The `action` schema below is the command
+# path you (Adil) wire up in Hour 2 — it's the velocity command the
+# Booster K1's B1LocoClient.Move(vx, vy, vyaw) will eventually consume.
+
+version: 1
+
+fps: 30
+
+# Reuse the last good frame if a tick has no fresh frame (transient
+# webcam hiccup shouldn't punch a hole in the stream).
+reuse_stale_frames: true
+
+# The robot subscribes to the executed action stream (commands from the
+# orchestrator / Conductor's FINAL_COMMAND, translated by you).
+action_subscription: true
+
+# h264 = WebRTC media path => shows up as a real video track in the room.
+# mjpeg/png/raw ride a byte stream and will NOT appear as a video track,
+# so Advaita's Vision Agent wouldn't see it. Keep this h264.
+videos:
+  - { name: front_camera, codec: h264 }
+
+# No robot state published in the webcam phase. (On real K1 you'd add
+# imu / joint fields here.)
+state: []
+
+# Velocity command schema. Hour 2: map FINAL_COMMAND -> these fields ->
+# B1LocoClient.Move(vx, vy, vyaw).
+action:
+  - { name: vx,   dtype: f32 }   # forward / back  (m/s)
+  - { name: vy,   dtype: f32 }   # strafe L / R    (m/s)
+  - { name: vyaw, dtype: f32 }   # turn rate       (rad/s)
