@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Stop all Baymax agents started by start_all.sh
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+# Linux / WSL version.
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PID_FILE="$ROOT/.pids"
 
 if [ ! -f "$PID_FILE" ]; then

@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # Start all Baymax agents. Logs go to logs/<agent>.log. PIDs saved to .pids.
+# Linux / WSL version — uses python3 explicitly.
 set -e
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 LOG_DIR="$ROOT/logs"
 PID_FILE="$ROOT/.pids"
 
 mkdir -p "$LOG_DIR"
 
 if [ -f "$PID_FILE" ]; then
-    echo "Agents may already be running (.pids exists). Run ./stop_all.sh first."
+    echo "Agents may already be running (.pids exists). Run scripts/linux/stop_all.sh first."
     exit 1
 fi
 
@@ -19,7 +20,7 @@ start_agent() {
     local name="$1"
     local script="$2"
     echo "Starting $name..."
-    python "$script" > "$LOG_DIR/$name.log" 2>&1 &
+    python3 "$script" > "$LOG_DIR/$name.log" 2>&1 &
     echo "$!" >> "$PID_FILE"
     echo "  $name  PID=$!"
 }
@@ -39,4 +40,4 @@ start_agent "vision"      "agents/vision_agent.py"
 echo ""
 echo "All agents started. Logs: logs/<agent>.log"
 echo "To tail all logs:  tail -f logs/*.log"
-echo "To stop:           ./stop_all.sh"
+echo "To stop:           scripts/linux/stop_all.sh"
