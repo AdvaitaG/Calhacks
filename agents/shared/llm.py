@@ -20,7 +20,7 @@ def make_llm():
         return ChatOpenAI(
             base_url=os.environ.get("NEBIUS_BASE_URL", "https://api.studio.nebius.com/v1/"),
             api_key=os.environ["NEBIUS_API_KEY"],
-            model=os.environ.get("NEBIUS_MODEL", "meta-llama/Meta-Llama-3.1-70B-Instruct"),
+            model=os.environ.get("NEBIUS_MODEL", "meta-llama/Llama-3.3-70B-Instruct"),
             temperature=0.1,
         )
 
