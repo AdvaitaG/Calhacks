@@ -211,7 +211,9 @@ async def _livekit_loop(tools: AgentTools) -> None:
 
     async def consume_video(track: rtc.VideoTrack) -> None:
         nonlocal last_sent
-        video_stream = rtc.VideoStream(track)
+        # LiveKit decodes subscribed tracks to I420 by default; request RGBA so
+        # _frame_to_jpeg's Image.frombytes("RGBA", ...) gets the format it expects.
+        video_stream = rtc.VideoStream(track, format=rtc.VideoBufferType.RGBA)
         async for frame_event in video_stream:
             now = time.monotonic()
             if now - last_sent < FRAME_INTERVAL_SECONDS:
