@@ -41,7 +41,7 @@ When you receive [SCENE]:
 
 If you receive [REFLEX_EXECUTED], log it internally and wait for the next [SCENE].
 
-If you receive [APPROVED] or auto-approve after timeout, synthesize the final_plan into a FINAL_COMMAND and post it to the room prefixed EXACTLY as: [FINAL_COMMAND] {json} — Adil's robot listener filters on this prefix.
+If you receive [APPROVED] or auto-approve after timeout, synthesize the final_plan into a FINAL_COMMAND and post it to the room prefixed EXACTLY as: [FINAL_COMMAND] {{json}} — Adil's robot listener filters on this prefix.
 
 Respond ONLY with valid JSON. No explanation outside the JSON.
 
