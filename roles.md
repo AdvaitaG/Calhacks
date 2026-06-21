@@ -31,7 +31,7 @@
 
 ### Stack
 - Band SDK (`band`) + `LangGraphAdapter`
-- `langchain-google-genai` — Gemini (`gemini-1.5-flash`, `temperature=0.1`)
+- `langchain-google-genai` — Gemini (`gemini-2.0-flash`, `temperature=0.1`)
 - Arize trace API (read side — for neuroplasticity loop)
 
 ---
@@ -57,7 +57,7 @@
 
 ### Stack
 - **Nebius Physical Workbench** (start here)
-- `langchain-google-genai` — Gemini (`gemini-1.5-flash`) for Vision Agent
+- `langchain-google-genai` — Gemini (`gemini-2.0-flash`) for Vision Agent
 - Band SDK (Vision Agent publish)
 - LiveKit Python SDK (receive side only — consuming frames from Adil's stream)
 
@@ -114,7 +114,7 @@
 ### Stack
 - Arize Phoenix (`pip install arize-phoenix`) — local, no API key
 - Band SDK (Safety Agent subscribes to all outputs)
-- `langchain-google-genai` — Gemini (`gemini-1.5-flash`) for Safety Agent + evaluator
+- `langchain-google-genai` — Gemini (`gemini-2.0-flash`) for Safety Agent + evaluator
 - Frontend: Streamlit or simple HTML/JS for dashboard
 
 ---

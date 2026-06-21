@@ -49,7 +49,7 @@ Most teams will wire one agent directly to a robot and call it done. We're doing
 | **Band** | The communication layer between all agents (like neural pathways) |
 | **LiveKit** | Streams robot camera feed to agents; sends commands back to the robot |
 | **Arize Phoenix** | Traces every agent decision in real time — the fMRI dashboard |
-| **Gemini** | `gemini-1.5-flash` via `langchain-google-genai` — powers every agent |
+| **Gemini** | `gemini-2.0-flash` via `langchain-google-genai` — powers every agent |
 | **LangGraph + LangChain** | Agent framework — `LangGraphAdapter` for Band. Eshwar decided, everyone follows. |
 | **Python** | Primary language (3.11+) |
 

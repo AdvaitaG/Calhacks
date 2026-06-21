@@ -93,7 +93,7 @@ The flagship demo: **guiding two blindfolded people along a route** — detectin
 
 ### 6. Gemini (LLM — "The Neurons")
 - Powers every agent's reasoning via `langchain-google-genai`
-- Model: `gemini-1.5-flash` for all agents
+- Model: `gemini-2.0-flash` for all agents
 - `GEMINI_API_KEY` in `.env`
 - One tight system prompt per agent — one brain region, one job
 
@@ -265,7 +265,7 @@ See `roles.md` for full responsibilities, deliverables, and hour-by-hour build o
 | Tool | Notes |
 |------|-------|
 | Python 3.11+ | Primary language |
-| `langchain-google-genai` | `gemini-1.5-flash` for all agents |
+| `langchain-google-genai` | `gemini-2.0-flash` for all agents |
 | `langgraph` | Agent framework — `LangGraphAdapter` for Band integration |
 | Band SDK (`band`) | Multi-agent communication — external agents, `LangGraphAdapter` |
 | Arize Phoenix | `pip install arize-phoenix` — local, no API key |
@@ -286,7 +286,7 @@ from band.adapters import LangGraphAdapter
 load_dotenv()
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
+    model="gemini-2.0-flash",
     temperature=0.1,
     google_api_key=os.environ["GEMINI_API_KEY"],
 )

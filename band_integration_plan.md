@@ -51,7 +51,7 @@ from band import Agent, run_with_graceful_shutdown
 from band.adapters import LangGraphAdapter
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
+    model="gemini-2.0-flash",
     temperature=0.1,                    # near-deterministic
     google_api_key=os.environ["GEMINI_API_KEY"],
 )
@@ -296,7 +296,7 @@ You are the Conductor (Prefrontal Cortex) of a Booster K1 humanoid guide robot..
 
 async def main():
     llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
+        model="gemini-2.0-flash",
         temperature=0.1,
         google_api_key=os.environ["GEMINI_API_KEY"],
     )

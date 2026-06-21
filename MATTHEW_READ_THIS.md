@@ -125,7 +125,7 @@ On [REFLEX] messages → always respond with [REFLEX_APPROVED], then notify @Con
 Respond ONLY with valid JSON. No explanation outside the JSON.
 """
 
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.1, google_api_key=...)
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.1, google_api_key=...)
 adapter = LangGraphAdapter(llm=llm, checkpointer=InMemorySaver(), custom_section=SAFETY_INSTRUCTIONS)
 agent = Agent.create(adapter=adapter, agent_id=..., api_key=..., ws_url="wss://app.band.ai/api/v1/socket/websocket", rest_url="https://app.band.ai")
 ```

@@ -112,7 +112,7 @@ Post your description to the room mentioning @Conductor and @Threat.
 Respond ONLY with valid JSON matching the scene schema exactly. No explanation outside the JSON.
 """
 
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.1, google_api_key=...)
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.1, google_api_key=...)
 adapter = LangGraphAdapter(llm=llm, checkpointer=InMemorySaver(), custom_section=VISION_INSTRUCTIONS)
 agent = Agent.create(adapter=adapter, agent_id=..., api_key=..., ws_url="wss://app.band.ai/api/v1/socket/websocket", rest_url="https://app.band.ai")
 ```
