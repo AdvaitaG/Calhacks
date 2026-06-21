@@ -33,19 +33,30 @@ logger = logging.getLogger("command_bridge")
 Velocity = Tuple[float, float, float]  # (vx, vy, vyaw)
 STOP: Velocity = (0.0, 0.0, 0.0)
 
-# Placeholder velocities — tune against the K1 sim (MuJoCo/Isaac) before hardware.
-# Source: ADIL_READ_THIS.md COMMAND_MAP.
-COMMAND_MAP: dict[str, Velocity] = {
-    "GUIDE_LEFT":     (0.2, 0.0,  0.3),
-    "GUIDE_RIGHT":    (0.2, 0.0, -0.3),
-    "MOVE_FORWARD":   (0.3, 0.0,  0.0),
-    "SLOW_DOWN":      (0.1, 0.0,  0.0),
+# Velocities tuned for the touchy Webots T1 sim (stays upright at ~0.1 m/s; the
+# sink slew-limits transitions). Re-tune higher for real hardware.
+# Confident demo pace. BAYMAX_SPEED scales all velocities live (no code edit) so
+# you can find the stable-but-impressive max: e.g. BAYMAX_SPEED=1.3 to push it,
+# =0.7 if it tips. Continuous walking (12s hold) keeps these stable.
+SPEED = float(os.environ.get("BAYMAX_SPEED", "1.0"))
+_BASE: dict[str, Velocity] = {
+    "GUIDE_LEFT":     (0.11, 0.0,  0.14),
+    "GUIDE_RIGHT":    (0.11, 0.0, -0.14),
+    "MOVE_FORWARD":   (0.14, 0.0,  0.0),   # steady stride this sim can hold upright
+    "SLOW_DOWN":      (0.09, 0.0,  0.0),
     "STOP":           STOP,
     "EMERGENCY_STOP": STOP,
 }
+COMMAND_MAP: dict[str, Velocity] = {
+    k: (v[0] * SPEED, v[1] * SPEED, v[2] * SPEED) for k, v in _BASE.items()
+}
 
 REFLEX_WINDOW_S = 0.20   # if a CORTICAL command lands within this of a REFLEX, REFLEX wins
-COMMAND_TIMEOUT_S = 2.0  # no fresh command for this long -> STOP (ADIL_READ_THIS.md:79)
+# No fresh command for this long -> STOP failsafe. The Conductor's LLM emits a
+# command only every ~10-20s, so a short timeout makes the robot stutter-stop
+# (and the start/stop destabilizes the sim). Hold the last command longer so it
+# walks continuously between decisions. Lower this for real-hardware safety.
+COMMAND_TIMEOUT_S = float(os.environ.get("BAYMAX_CMD_TIMEOUT_S", "12.0"))
 TICK_HZ = 20             # control loop rate
 
 

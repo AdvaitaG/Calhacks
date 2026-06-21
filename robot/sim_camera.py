@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import itertools
+import os
 import sys
 
 import cv2
@@ -54,14 +55,23 @@ async def main() -> None:
     # obstacle DIRECTLY AHEAD (centered, large) — this should block forward motion
     f = base(); cv2.rectangle(f, (240, 120), (420, 340), (40, 40, 200), -1)
     blocked = labelled(f, "obstacle DIRECTLY AHEAD")
-    scenes = [("clear", clear), ("obstacle-left", obstacle_left),
-              ("obstacle-right", obstacle_right), ("blocked-ahead", blocked)]
+    frames = {"clear": clear, "obstacle-left": obstacle_left,
+              "obstacle-right": obstacle_right, "blocked-ahead": blocked}
 
-    print("[sim_camera] cycling scenes (clear / obstacle-left / obstacle-right)")
-    period = 8.0  # seconds per scene
+    # Demo-tuned order: mostly confident forward motion, guide around side
+    # obstacles, with an occasional 'blocked-ahead' for the dramatic safety stop.
+    # Override live with BAYMAX_SCENES="clear,obstacle-left,clear,..." and
+    # BAYMAX_SCENE_SECS=<seconds per scene>.
+    order = os.environ.get(
+        "BAYMAX_SCENES",
+        "clear,clear,obstacle-left,clear,obstacle-right,clear,clear,blocked-ahead,clear",
+    ).split(",")
+    period = float(os.environ.get("BAYMAX_SCENE_SECS", "7"))
+    print(f"[sim_camera] scene order ({period:.0f}s each): {order}")
     try:
         for i in itertools.count():
-            name, rgba = scenes[int(i / (15 * period)) % len(scenes)]
+            name = order[int(i / (15 * period)) % len(order)]
+            rgba = frames.get(name, clear)
             if i % int(15 * period) == 0:
                 print(f"[sim_camera] scene -> {name}")
             source.capture_frame(rtc.VideoFrame(W, H, rtc.VideoBufferType.RGBA, rgba.tobytes()))
