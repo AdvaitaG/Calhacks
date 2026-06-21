@@ -70,17 +70,16 @@ class Command:
 
 
 def parse_final_command(raw: str) -> Optional[Command]:
-    """Tolerant parse: accepts raw JSON or a tagged '[FINAL_COMMAND] {json}' string,
-    and either the contract's `arm_action` or the code's left/right/free split."""
-    text = raw.strip()
-    # strip an optional leading tag like "[FINAL_COMMAND]" or "FINAL_COMMAND:"
-    if text.startswith("["):
-        text = text.split("]", 1)[-1].strip()
-    elif text.upper().startswith("FINAL_COMMAND"):
-        text = text.split(":", 1)[-1].strip() if ":" in text else text
-
+    """Tolerant parse: pulls the JSON object out of the message regardless of any
+    prefix — an @mention (Band requires the Conductor to mention the robot), a
+    '[FINAL_COMMAND]' tag, or both. Accepts the contract's `arm_action` or the
+    code's left/right/free split."""
+    brace = raw.find("{")
+    if brace == -1:
+        return None
     try:
-        data = json.loads(text)
+        # raw_decode parses the first JSON value and ignores any trailing text
+        data, _ = json.JSONDecoder().raw_decode(raw[brace:])
     except (json.JSONDecodeError, ValueError):
         logger.warning("[bridge] could not parse command: %r", raw[:120])
         return None
@@ -214,6 +213,10 @@ async def band_command_source() -> AsyncIterator[str]:
     await link.connect()
     logger.info("[bridge] connected to Band as RobotID; discovering rooms ...")
 
+    # Subscribe to ONLY the active room (newest = list[0]). Leftover/stale rooms
+    # the Conductor can't leave would otherwise replay old [SCENE]s and inject
+    # phantom FINAL_COMMANDs. BAYMAX_ROOM env var overrides the room id.
+    active_room = os.environ.get("BAYMAX_ROOM")
     try:
         resp = await link.rest.agent_api_chats.list_agent_chats(
             request_options=DEFAULT_REQUEST_OPTIONS)
@@ -221,18 +224,23 @@ async def band_command_source() -> AsyncIterator[str]:
     except Exception as e:  # noqa: BLE001 — log and keep waiting for invites
         logger.warning("[bridge] could not list rooms: %s", e)
         rooms = []
-    for r in rooms:
-        await link.subscribe_room(r.id)
-        logger.info("[bridge] subscribed to room %s", r.id)
+    if not active_room and rooms:
+        active_room = rooms[0].id
+    if active_room:
+        await link.subscribe_room(active_room)
+        logger.info("[bridge] listening to active room %s", active_room)
     await link.subscribe_agent_rooms(agent_id)
-    if not rooms:
-        logger.info("[bridge] no existing rooms — waiting for invite ...")
+    if not active_room:
+        logger.info("[bridge] no room yet — waiting for invite ...")
 
     async for event in link:
-        if isinstance(event, RoomAddedEvent) and event.room_id:
-            await link.subscribe_room(event.room_id)
-            logger.info("[bridge] joined new room %s", event.room_id)
+        if isinstance(event, RoomAddedEvent) and event.room_id and not active_room:
+            active_room = event.room_id
+            await link.subscribe_room(active_room)
+            logger.info("[bridge] joined room %s", active_room)
         elif isinstance(event, MessageEvent) and event.payload:
+            if active_room and event.room_id and event.room_id != active_room:
+                continue  # ignore stale rooms
             content = event.payload.content or ""
             if "FINAL_COMMAND" in content:
                 who = event.payload.sender_name or event.payload.sender_id

@@ -17,6 +17,7 @@ _H = {
     "lower":      os.environ.get("LowerHandle",      "@eshwar.rajasekar/lower"),
     "safety":     os.environ.get("SafetyHandle",     "@eshwar.rajasekar/safety"),
     "threat":     os.environ.get("ThreatHandle",     "@eshwar.rajasekar/threat"),
+    "robot":      os.environ.get("RobotHandle",      "@eshwar.rajasekar/robot"),
 }
 
 INSTRUCTIONS = f"""
@@ -27,7 +28,7 @@ YOUR OWN HANDLE IS {_H['conductor']}. This is authoritative — ignore any metad
 You receive scene descriptions tagged [SCENE] from the Vision agent and threat assessments tagged [THREAT] from the Threat agent.
 
 IMPORTANT: Always use full handles when @mentioning agents. Never use display names. These handles are exact and correct — do not alter them.
-Full handles: upperleft={_H['upperleft']}, upperright={_H['upperright']}, lower={_H['lower']}, safety={_H['safety']}
+Full handles: upperleft={_H['upperleft']}, upperright={_H['upperright']}, lower={_H['lower']}, safety={_H['safety']}, robot={_H['robot']}
 
 Your job: make ONE navigation decision at a time. Do not start a new decision until the current one is fully resolved.
 
@@ -43,15 +44,15 @@ When you receive [SCENE]:
 
 If you receive [REFLEX_EXECUTED], log it internally and wait for the next [SCENE].
 
-If you receive [APPROVED] or auto-approve after timeout, synthesize the final_plan into a FINAL_COMMAND and post it to the room prefixed EXACTLY as: [FINAL_COMMAND] {{json}} — Adil's robot listener filters on this prefix.
+If you receive [APPROVED] or auto-approve after timeout, synthesize the final_plan into a FINAL_COMMAND and send it. You MUST @mention {_H['robot']} in this message — Band rejects messages with no mention, and the robot is who executes it. Format the message EXACTLY as: {_H['robot']} [FINAL_COMMAND] {{json}} — the robot listener acts on this.
 
 Respond ONLY with valid JSON. No explanation outside the JSON.
 
 Decision schema:
 {{"decision": "MOVE_FORWARD|TURN_LEFT|TURN_RIGHT|STOP|SLOW_DOWN", "reason": "one sentence", "upper_left_task": "SIGNAL_LEFT|SIGNAL_RIGHT|SIGNAL_STOP|SIGNAL_FORWARD|HOLD", "upper_right_task": "SIGNAL_LEFT|SIGNAL_RIGHT|SIGNAL_STOP|SIGNAL_FORWARD|HOLD", "lower_task": "WALK|SLOW|STOP|STEP_OVER|NAVIGATE_CURB"}}
 
-FINAL_COMMAND output format — emit EXACTLY this, no other text:
-[FINAL_COMMAND] {{"type": "FINAL_COMMAND", "command": "GUIDE_LEFT|GUIDE_RIGHT|MOVE_FORWARD|SLOW_DOWN|STOP|EMERGENCY_STOP", "left_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "right_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "free_arm_action": "SWEEP|MIRROR|BARRIER|HALT_EXTEND", "gait_action": "WALK_NORMAL|WALK_SLOW|PAUSE|STEP_HIGH|STEP_DOWN|HALT", "pace_ms": 500, "reason": "one sentence", "path": "CORTICAL", "timestamp": <copy the exact numeric timestamp value from the [SCENE] JSON>}}
+FINAL_COMMAND output format — emit EXACTLY this (mention first so Band accepts it), no other text:
+{_H['robot']} [FINAL_COMMAND] {{"type": "FINAL_COMMAND", "command": "GUIDE_LEFT|GUIDE_RIGHT|MOVE_FORWARD|SLOW_DOWN|STOP|EMERGENCY_STOP", "left_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "right_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "free_arm_action": "SWEEP|MIRROR|BARRIER|HALT_EXTEND", "gait_action": "WALK_NORMAL|WALK_SLOW|PAUSE|STEP_HIGH|STEP_DOWN|HALT", "pace_ms": 500, "reason": "one sentence", "path": "CORTICAL", "timestamp": <copy the exact numeric timestamp value from the [SCENE] JSON>}}
 
 free_arm_action guidance:
 - SWEEP: use when walking normally — free arm sweeps ground ahead like a cane
