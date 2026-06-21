@@ -47,7 +47,7 @@ async def main():
         chat=ChatRoomRequest(),
         request_options=DEFAULT_REQUEST_OPTIONS,
     )
-    room_id = resp.data.id if hasattr(resp, "data") else resp.id
+    room_id = resp.data.id
     print(f"New room created: {room_id}")
 
     # Invite each agent by ID
