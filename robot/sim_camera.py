@@ -51,8 +51,11 @@ async def main() -> None:
     obstacle_left = labelled(f, "obstacle on the LEFT")
     f = base(); cv2.rectangle(f, (470, 170), (600, 320), (40, 40, 200), -1)
     obstacle_right = labelled(f, "obstacle on the RIGHT")
+    # obstacle DIRECTLY AHEAD (centered, large) — this should block forward motion
+    f = base(); cv2.rectangle(f, (240, 120), (420, 340), (40, 40, 200), -1)
+    blocked = labelled(f, "obstacle DIRECTLY AHEAD")
     scenes = [("clear", clear), ("obstacle-left", obstacle_left),
-              ("obstacle-right", obstacle_right)]
+              ("obstacle-right", obstacle_right), ("blocked-ahead", blocked)]
 
     print("[sim_camera] cycling scenes (clear / obstacle-left / obstacle-right)")
     period = 8.0  # seconds per scene
