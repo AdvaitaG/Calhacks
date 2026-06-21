@@ -37,21 +37,26 @@ from agents.shared.config import WS_URL, REST_URL
 # Shared state — updated by Band listener, read by SSE clients
 # ---------------------------------------------------------------------------
 
+_AGENT_DEFAULTS = {
+    "vision":      {"summary": "—", "hazard": "NONE", "obstacles": [], "terrain": "—", "latency_ms": 0},
+    "threat":      {"level": "NONE", "description": "—"},
+    "conductor":   {"decision": "—", "reason": "—"},
+    "upper_left":  {"arm_action": "—", "free_arm": "—"},
+    "upper_right": {"arm_action": "—", "free_arm": "—"},
+    "lower":       {"gait_action": "—", "pace_ms": 0},
+    "safety":      {"status": "—", "reason": "—"},
+    "spine":       {"status": "Standby"},
+}
+
 state = {
-    "vision":        {"summary": "—", "hazard": "NONE", "obstacles": [], "terrain": "—", "latency_ms": 0, "ts": 0, "thinking": ""},
-    "threat":        {"level": "NONE", "description": "—", "ts": 0, "thinking": ""},
-    "conductor":     {"decision": "—", "reason": "—", "ts": 0, "thinking": ""},
-    "upper_left":    {"arm_action": "—", "free_arm": "—", "ts": 0, "thinking": ""},
-    "upper_right":   {"arm_action": "—", "free_arm": "—", "ts": 0, "thinking": ""},
-    "lower":         {"gait_action": "—", "pace_ms": 0, "ts": 0, "thinking": ""},
-    "safety":        {"status": "—", "reason": "—", "ts": 0, "thinking": ""},
-    "spine":         {"status": "—", "ts": 0, "thinking": ""},
+    **{k: {**v, "ts": 0, "thinking": "", "active": False, "last_tag": ""} for k, v in _AGENT_DEFAULTS.items()},
     "final_command": {"command": "—", "reason": "—", "path": "—", "left_arm": "—", "right_arm": "—", "free_arm": "—", "gait": "—", "ts": 0},
-    "pipeline_latency_ms": None,   # wall-clock ms from [SCENE] recv to [FINAL_COMMAND] recv
-    "latency_history": [],         # last 10 latency values for sparkline
+    "pipeline_latency_ms": None,
+    "latency_history": [],
+    "active_path": None,
     "message_count": 0,
-    "connected":     False,
-    "log":           [],
+    "connected": False,
+    "log": [],
 }
 _scene_recv_ms: int | None = None   # wall-clock time the last [SCENE] arrived
 _log_deque: deque = deque(maxlen=30)
@@ -87,7 +92,19 @@ def _log(sender: str, content: str, tag: str):
     })
 
 
-def _thinking(content: str, max_len: int = 120) -> str:
+def _activate(agent: str, tag: str, thinking: str = ""):
+    """Mark an agent as recently active for overlay pulse + link animation."""
+    now = _now_ms()
+    entry = state[agent]
+    entry["ts"] = now
+    entry["active"] = True
+    entry["active_until"] = now + 2000
+    entry["last_tag"] = tag
+    if thinking:
+        entry["thinking"] = thinking[:200]
+
+
+def _thinking(content: str, max_len: int = 200) -> str:
     """Extract a short readable excerpt for the 'thinking' field."""
     text = content.strip()
     # strip tag prefix
@@ -118,81 +135,86 @@ def _parse_message(content: str, sender: str):
     sender_lower = sender.lower()
 
     if content.startswith("[SCENE]"):
-        _scene_recv_ms = _now_ms()   # start the pipeline clock
+        _scene_recv_ms = _now_ms()
         _log(sender, content, "SCENE")
         try:
             data = json.loads(content[7:].strip())
+            summary = data.get("scene_summary", "—")
             state["vision"].update({
-                "summary":    data.get("scene_summary", "—"),
+                "summary":    summary,
                 "hazard":     data.get("hazard_level", "NONE"),
                 "obstacles":  data.get("obstacles", []),
                 "terrain":    data.get("terrain", "—"),
                 "latency_ms": data.get("latency_ms", 0),
-                "ts":         data.get("timestamp", _now_ms()),
-                "thinking":   data.get("scene_summary", "")[:120],
             })
+            _activate("vision", "SCENE", summary)
         except Exception:
-            state["vision"]["thinking"] = content[7:120]
+            _activate("vision", "SCENE", content[7:200])
 
     elif "[THREAT]" in content:
         _log(sender, content, "THREAT")
         try:
             start = content.index("[THREAT]") + 8
             data = json.loads(content[start:].strip())
+            desc = data.get("description", "—")
             state["threat"].update({
                 "level":       data.get("threat_level", "NONE"),
-                "description": data.get("description", "—"),
-                "ts":          _now_ms(),
-                "thinking":    data.get("description", "")[:120],
+                "description": desc,
             })
+            _activate("threat", "THREAT", desc)
+            if data.get("fire_reflex"):
+                state["active_path"] = "REFLEX"
         except Exception:
-            state["threat"].update({"level": "UNKNOWN", "description": content[:80], "ts": _now_ms(),
-                                    "thinking": content[:120]})
+            state["threat"].update({"level": "UNKNOWN", "description": content[:80]})
+            _activate("threat", "THREAT", content[:200])
 
     elif "[TASK]" in content:
         _log(sender, content, "TASK")
+        state["active_path"] = "CORTICAL"
         try:
             start = content.index("[TASK]") + 6
             data = json.loads(content[start:].strip())
+            reason = data.get("reason", "—")
             state["conductor"].update({
                 "decision": data.get("decision", "—"),
-                "reason":   data.get("reason", "—"),
-                "ts":       _now_ms(),
-                "thinking": data.get("reason", "")[:120],
+                "reason":   reason,
             })
+            _activate("conductor", "TASK", reason)
         except Exception:
-            state["conductor"].update({"decision": "dispatched", "reason": content[:80], "ts": _now_ms(),
-                                       "thinking": content[:120]})
+            state["conductor"].update({"decision": "dispatched", "reason": content[:80]})
+            _activate("conductor", "TASK", content[:200])
 
     elif "[READY]" in content:
         _log(sender, content, "READY")
         try:
             start = content.index("[READY]") + 7
             data = json.loads(content[start:].strip())
-            entry = {
-                "arm_action": data.get("arm_action", "—"),
-                "free_arm":   data.get("free_arm_action", "—"),
-                "ts":         _now_ms(),
-                "thinking":   _thinking(content),
-            }
+            thinking = _thinking(content)
             if "upperleft" in sender_lower or "upper_left" in sender_lower:
-                state["upper_left"].update(entry)
+                state["upper_left"].update({
+                    "arm_action": data.get("arm_action", "—"),
+                    "free_arm":   data.get("free_arm_action", "—"),
+                })
+                _activate("upper_left", "READY", thinking)
             elif "upperright" in sender_lower or "upper_right" in sender_lower:
-                state["upper_right"].update(entry)
+                state["upper_right"].update({
+                    "arm_action": data.get("arm_action", "—"),
+                    "free_arm":   data.get("free_arm_action", "—"),
+                })
+                _activate("upper_right", "READY", thinking)
             elif "lower" in sender_lower:
                 state["lower"].update({
                     "gait_action": data.get("gait_action", "—"),
                     "pace_ms":     data.get("pace_ms", 0),
-                    "ts":          _now_ms(),
-                    "thinking":    _thinking(content),
                 })
+                _activate("lower", "READY", thinking)
         except Exception:
             pass
 
     elif "[APPROVED]" in content:
         _log(sender, content, "APPROVED")
-        state["safety"].update({"status": "APPROVED", "reason": "Command approved", "ts": _now_ms(),
-                                "thinking": "Command approved ✓"})
+        state["safety"].update({"status": "APPROVED", "reason": "Command approved"})
+        _activate("safety", "APPROVED", "Command approved ✓")
 
     elif "[VETOED]" in content:
         _log(sender, content, "VETOED")
@@ -200,26 +222,27 @@ def _parse_message(content: str, sender: str):
             start = content.index("[VETOED]") + 8
             data = json.loads(content[start:].strip())
             reason = data.get("reason", "—")
-            state["safety"].update({"status": "VETOED", "reason": reason, "ts": _now_ms(),
-                                    "thinking": reason[:120]})
+            state["safety"].update({"status": "VETOED", "reason": reason})
+            _activate("safety", "VETOED", reason)
         except Exception:
-            state["safety"].update({"status": "VETOED", "reason": "—", "ts": _now_ms(), "thinking": ""})
+            state["safety"].update({"status": "VETOED", "reason": "—"})
+            _activate("safety", "VETOED", "")
 
     elif "[REFLEX]" in content or "[HALT]" in content:
         tag = "REFLEX" if "[REFLEX]" in content else "HALT"
         _log(sender, content, tag)
-        state["spine"].update({"status": "REFLEX FIRED", "ts": _now_ms(),
-                               "thinking": "Emergency reflex triggered!"})
-        state["safety"].update({"status": "—", "reason": "—", "ts": 0, "thinking": ""})
+        state["active_path"] = "REFLEX"
+        state["spine"].update({"status": "REFLEX FIRED"})
+        _activate("spine", tag, "Emergency reflex triggered!")
+        state["safety"].update({"status": "—", "reason": "—", "ts": 0, "thinking": "", "active": False, "last_tag": ""})
 
     elif "[REFLEX_EXECUTED]" in content:
         _log(sender, content, "REFLEX_EXECUTED")
-        state["spine"].update({"status": "REFLEX EXECUTED", "ts": _now_ms(),
-                               "thinking": "Reflex command sent to robot"})
+        state["spine"].update({"status": "REFLEX EXECUTED"})
+        _activate("spine", "REFLEX_EXECUTED", "Reflex command sent to robot")
 
     elif "FINAL_COMMAND" in content:
         _log(sender, content, "FINAL_COMMAND")
-        # measure end-to-end pipeline latency
         if _scene_recv_ms is not None:
             latency = _now_ms() - _scene_recv_ms
             state["pipeline_latency_ms"] = latency
@@ -230,19 +253,28 @@ def _parse_message(content: str, sender: str):
         try:
             brace = content.index("{")
             data = json.loads(content[brace:content.rindex("}") + 1])
+            path = data.get("path", "—")
+            state["active_path"] = path if path in ("CORTICAL", "REFLEX") else state.get("active_path")
             state["final_command"].update({
                 "command":   data.get("command", "—"),
                 "reason":    data.get("reason", "—"),
-                "path":      data.get("path", "—"),
+                "path":      path,
                 "left_arm":  data.get("left_arm_action", "—"),
                 "right_arm": data.get("right_arm_action", "—"),
                 "free_arm":  data.get("free_arm_action", "—"),
                 "gait":      data.get("gait_action", "—"),
                 "ts":        data.get("timestamp", _now_ms()),
             })
-            state["safety"].update({"status": "—", "reason": "—", "ts": 0, "thinking": ""})
+            state["safety"].update({"status": "—", "reason": "—", "ts": 0, "thinking": "", "active": False, "last_tag": ""})
         except Exception:
             pass
+
+    # Expire active flags
+    now = _now_ms()
+    for agent in _AGENT_DEFAULTS:
+        until = state[agent].get("active_until", 0)
+        if until and now > until:
+            state[agent]["active"] = False
 
     _push_update()
 
