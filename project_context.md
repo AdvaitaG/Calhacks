@@ -6,38 +6,41 @@
 ---
 
 ## The Idea (One Sentence)
-A humanoid guide robot that assists blind people — powered by a nervous system of AI agents: one synchronous conductor brain that makes decisions, tactical agents that coordinate with each other to execute safely, and Arize making every decision visible like an fMRI of the robot's mind.
+A humanoid guide robot that assists **two blind people simultaneously** — one on each side — powered by a nervous system of AI agents: one synchronous conductor brain that makes decisions, independent left/right arm agents that each focus on their person, tactical agents that coordinate with each other to execute safely, and Arize making every decision visible like an fMRI of the robot's mind.
 
 ---
 
-## Use Case: Assistive Robot for the Blind
-The robot helps a visually impaired person navigate their environment. It perceives the world through its sensors (camera, depth, audio), makes decisions about how to assist (guide around an obstacle, signal a turn, warn of a hazard, stop for a curb), and executes those decisions by coordinating movement across its body safely and in sync.
+## Use Case: Dual-Person Assistive Robot for the Blind
+The robot (a **Booster K1** humanoid) guides **two visually impaired people at once** — one on the left side, one on the right side. Each person holds one of the robot's hands. The robot perceives the world through its sensors (camera, depth, audio), makes decisions about how to assist each person independently, and executes those decisions by coordinating movement across its body safely and in sync.
 
-The flagship demo: **guiding a blindfolded person along a route** — detecting hazards, planning a safe path, and steering with gentle physical guidance (left / right / stop / forward). Real-world impact, clear user need, and the multi-agent decomposition is *necessary* — navigation and manipulation have genuinely conflicting physical constraints (guiding someone through a doorway while detecting a step hazard requires different limbs doing different things with tight coordination).
+**What makes this novel:** Each arm operates as an independent agent focused on its person's safety. The UpperLeft agent guides the person on the left; the UpperRight agent guides the person on the right. They can execute different signals simultaneously — the left person might need a STOP signal while the right person gets a FORWARD signal — while the Lower agent manages the robot's shared walking mechanics and Spine coordinates the fast-path reflexes.
+
+The flagship demo: **guiding two blindfolded people along a route** — detecting hazards per-side, planning a safe shared path, and steering each person with gentle physical guidance (left / right / stop / forward). Real-world impact, clear user need, and the multi-agent decomposition is *necessary* — two people being guided with conflicting constraints (different obstacles on each side) genuinely requires independent per-arm decision-making.
 
 ---
 
 ## What We Are Building
 
-**Baymax** — a hierarchical multi-agent system controlling a humanoid guide robot, architected as a biological nervous system. Think Big Hero 6's Baymax: a personal, safe, caring physical companion.
+**Baymax** — a hierarchical multi-agent system controlling a Booster K1 humanoid guide robot, architected as a biological nervous system. Think Big Hero 6's Baymax: a personal, safe, caring physical companion — but capable of helping two people at once.
 
 **Two architectural layers:**
 - **Strategic layer (synchronous):** One Conductor agent processes all sensory input and makes the primary navigation decision. Synchronous by design — it completes one decision at a time, ensuring nothing desyncs. Low latency on the critical path because only one agent is deciding.
 - **Tactical layer (coordinated):** Tactical agents receive the Conductor's decision and coordinate *with each other* via Band to execute their piece. They don't just receive orders — they negotiate to ensure the robot's movements are physically coherent before executing.
 
-**Three things make this novel:**
-1. **Hierarchical latency design** — synchronous conductor prevents desync; parallel tactical agents maximize execution speed
-2. **Peer tactical coordination** — tactical agents talk to each other through Band, not just up to the conductor. They resolve physical conflicts before acting.
-3. **Neuroplasticity** — Arize traces every decision. Between runs, the Conductor reads traces, identifies failures, rewrites tactical agent prompts. The robot visibly improves run over run.
+**Four things make this novel:**
+1. **Dual-person guidance** — one robot, two blind people, two independent arm agents. Each arm has its own agent focused on one person's safety.
+2. **Hierarchical latency design** — synchronous conductor prevents desync; parallel tactical agents maximize execution speed
+3. **Peer tactical coordination** — tactical agents talk to each other through Band, not just up to the conductor. They resolve physical conflicts before acting.
+4. **Neuroplasticity** — Arize traces every decision. Between runs, the Conductor reads traces, identifies failures, rewrites tactical agent prompts. The robot visibly improves run over run.
 
 ---
 
 ## Narrative for Presentation
-> *"The human nervous system doesn't send one giant command to the whole body. Your brain makes a decision — synchronously, one at a time — then your limbs negotiate how to carry it out. We built that architecture. Baymax is the first humanoid guide robot with a real nervous system: a brain that decides, and a body that coordinates."*
+> *"The human nervous system doesn't send one giant command to the whole body. Your brain makes a decision — synchronously, one at a time — then your limbs negotiate how to carry it out. We built that architecture. And we pushed it further: Baymax guides two blind people simultaneously, one on each side. The left arm agent focuses entirely on the person to its left. The right arm agent focuses entirely on the person to its right. They can send different signals at the same time. That's not possible with a single monolithic AI. It requires a nervous system."*
 
 **Demo arc:**
-- **Run 1:** Baymax guides a blindfolded person along a route with baseline agent prompts — hesitant, jerky, over-cautious. Arize dashboard runs live beside the walk; judges watch every agent decision light up like brain regions firing.
-- **Between runs:** Conductor reads Arize traces, identifies failures (e.g. Lower Body stopped too abruptly, Upper Body hesitated on turn signal), rewrites agent prompts live (neuroplasticity).
+- **Run 1:** Baymax guides two blindfolded people along a route with baseline agent prompts — hesitant, jerky, over-cautious. Arize dashboard runs live beside the walk; judges watch every agent decision light up like brain regions firing.
+- **Between runs:** Conductor reads Arize traces, identifies failures (e.g. Lower stopped too abruptly, UpperLeft hesitated on turn signal), rewrites agent prompts live (neuroplasticity).
 - **Run 2:** Baymax guides more smoothly and safely. Arize shows the before/after prompt diff.
 - **Reflex demo:** a sudden hazard appears → Baymax STOPS in ~90ms via the reflex path, bypassing the Conductor entirely.
 - **Closing line:** *"This is what it looks like when a robot has a nervous system — not a script."*
@@ -47,7 +50,7 @@ The flagship demo: **guiding a blindfolded person along a route** — detecting 
 ## Sponsor Technologies
 
 ### 1. UFB — Ultimate Bots (Physical AI / Robot Target)
-- Humanoid robotics platform providing the robot or simulator we are controlling
+- Robot: **Booster K1** humanoid (on-site at event)
 - Prize track: **Physical AI Hack — $3,000**
 - UFB provides **$150 free compute per team** via their Slack channel (provisioned through Nebius)
 - Judging bar: "Would a real robotics team use it?" — yes: hierarchical control with peer tactical coordination is production-grade robotics architecture
@@ -65,8 +68,8 @@ The flagship demo: **guiding a blindfolded person along a route** — detecting 
   - **Top-down (Conductor → Tactical):** strategic decision dispatched to all tactical agents
   - **Peer (Tactical ↔ Tactical):** agents negotiate with each other to resolve physical conflicts before executing
 - Each agent is an **external/remote agent** — runs in our code, registers with Band via `agent name` + `API key`
-- Band SDK supports LangChain and CrewAI — Eshwar picks one, everyone follows
-- Minimum 2 agents for prize — we will have 5+
+- Framework: **LangGraph + LangChain** (`LangGraphAdapter` + `ChatGoogleGenerativeAI`) — decided by Eshwar, everyone follows
+- 6 agents registered: Conductor, UpperLeft, UpperRight, Lower, Threat, Spine (+ Safety by Matthew = 7 total)
 - **One job per agent.** Short, focused prompts. Do not combine responsibilities.
 
 ### 4. Arize Phoenix (Observability — "The fMRI")
@@ -88,9 +91,10 @@ The flagship demo: **guiding a blindfolded person along a route** — detecting 
 - Conductor sends final navigation commands back to robot via LiveKit
 - Fallback: webcam sim if UFB hardware unavailable at event
 
-### 6. Claude API (LLM — "The Neurons")
-- Powers every agent's reasoning
-- Use `claude-sonnet-4-6` or latest capable model
+### 6. Gemini (LLM — "The Neurons")
+- Powers every agent's reasoning via `langchain-google-genai`
+- Model: `gemini-1.5-flash` for all agents
+- `GEMINI_API_KEY` in `.env`
 - One tight system prompt per agent — one brain region, one job
 
 ---
@@ -98,17 +102,18 @@ The flagship demo: **guiding a blindfolded person along a route** — detecting 
 ## Agent Architecture — The Nervous System
 
 ```
-        ENVIRONMENT (what the blind user is navigating)
+        ENVIRONMENT (two blind people, one on each side of the robot)
                         │
-           Robot sensors (camera, depth, audio)
+           Robot sensors (camera, depth, audio) — Booster K1
                         │
                    LiveKit stream
                         │
                    Vision Agent
           [Sensory Cortex — perceives scene:
-           obstacles, people, vehicles, curbs, terrain]
+           obstacles per side, people, vehicles,
+           curbs, terrain, left/right hazard levels]
                         │
-                   Band Room
+                   Band Room (baymax-coordination)
                         │
           ┌──── Conductor Agent ────┐
           │    [Prefrontal Cortex]  │
@@ -117,20 +122,26 @@ The flagship demo: **guiding a blindfolded person along a route** — detecting 
           │    at a time            │
           └──────────┬──────────────┘
                      │ dispatches task
-         ┌───────────┼────────────┐
-         │           │            │
-  Upper Body    Lower Body    Safety Agent
-    Agent         Agent       [Brainstem —
- [Motor Cortex— [Cerebellum—   veto + STOP]
-  guiding arm,   walking pace,
-  hand signals]  curbs/terrain]
-         │           │
-         └── peer coordination via Band ──┘
+         ┌───────────┼───────────────┐
+         │           │               │
+   UpperLeft     UpperRight        Lower
+    Agent          Agent           Agent
+ [Motor Cortex— [Motor Cortex—  [Cerebellum—
+  guides LEFT    guides RIGHT    walking pace,
+  blind person,  blind person,   curbs/terrain]
+  left arm]      right arm]
+         │           │               │
+         └─── peer coordination via Band ───┘
          (agents negotiate physical conflicts
-          before executing — e.g. arm needed
-          for balance vs arm needed for signal)
+          before executing)
                      │
-           Conductor receives coordinated plan
+            Spine Agent [Spinal Cord]
+          (fast-path reflex coordinator)
+                     │
+              Safety Agent [Brainstem]
+              (Matthew owns — veto + STOP gate)
+                     │
+           Conductor receives approved plan
                      │
              LiveKit → Robot executes
                      │
@@ -140,24 +151,26 @@ The flagship demo: **guiding a blindfolded person along a route** — detecting 
 ### Two Decision Paths
 
 **Cortical Path (deliberate, ~800ms):**
-Vision → Conductor → Upper Body + Lower Body (parallel, via Band) → peer coordination → Safety review → Conductor → Command
-Used for: route planning, turns, walking pace, curb/crosswalk decisions
+Vision → Conductor → UpperLeft + UpperRight + Lower (parallel, via Band) → peer coordination → Safety review → Conductor → Command
+Used for: route planning, turns, walking pace, curb/crosswalk decisions, per-person guidance signals
 
 **Reflex Arc (fast, ~90ms):**
-Threat Agent detects critical hazard → directly triggers Safety STOP + Joint Agents, **bypassing Conductor**
+Threat Agent detects critical hazard → Spine → HALT to UpperLeft + UpperRight + Lower, **bypassing Conductor**
 Used for: emergency stop, sudden obstacle or vehicle avoidance
 Arize logs which path was taken for every decision.
 
 ### Agent Roles
 
-| Agent | Brain Region | Job | Input | Output |
-|-------|-------------|-----|-------|--------|
-| **Vision Agent** | Sensory Cortex | Perceives the scene | LiveKit camera/depth feed | Scene description → Band room |
-| **Conductor Agent** | Prefrontal Cortex | Makes primary navigation decision, synchronously | Vision output + Arize traces (between runs) | Task dispatched to tactical agents; final command to LiveKit |
-| **Upper Body Agent** | Motor Cortex | Controls guiding arm + hand signals (left/right/stop/forward) | Conductor task + peer negotiation with Lower Body | Arm + hand-signal action plan |
-| **Lower Body Agent** | Cerebellum | Manages walking pace, stops at curbs/stairs, adjusts for terrain | Conductor task + peer negotiation with Upper Body | Pace + footing action plan |
-| **Threat Agent** | Amygdala | Detects sudden hazards (vehicles, obstacles, drops) | Scene description | Urgency signal; fires Reflex Arc if critical |
-| **Safety Agent** | Brainstem | Vetoes unsafe commands, fires emergency STOP | All agent outputs | Approved or vetoed + reason (logged to Arize) |
+| Agent | Brain Region | Band Handle | Job |
+|-------|-------------|-------------|-----|
+| **Vision Agent** | Sensory Cortex | (Advaita's) | Perceives the scene, reports obstacles relative to LEFT and RIGHT person separately |
+| **Conductor** | Prefrontal Cortex | `@eshwar.rajasekar/conductor` | Makes primary navigation decision, synchronously; dispatches to UpperLeft/UpperRight/Lower |
+| **UpperLeft** | Motor Cortex (Left) | `@eshwar.rajasekar/upperleft` | Controls LEFT guiding arm — guides the blind person on the left side |
+| **UpperRight** | Motor Cortex (Right) | `@eshwar.rajasekar/upperright` | Controls RIGHT guiding arm — guides the blind person on the right side |
+| **Lower** | Cerebellum | `@eshwar.rajasekar/lower` | Manages walking pace, stops at curbs/stairs, adjusts for terrain |
+| **Spine** | Spinal Cord | `@eshwar.rajasekar/spine` | Fast-path reflex coordinator — receives CRITICAL threat, immediately HALTs UpperLeft/UpperRight/Lower |
+| **Threat** | Amygdala | `@eshwar.rajasekar/threat` | Detects sudden hazards; fires Reflex Arc if CRITICAL |
+| **Safety** | Brainstem | (Matthew's) | Vetoes unsafe commands, fires emergency STOP, logs to Arize |
 
 ### Neuroplasticity Loop (between runs)
 ```
@@ -172,15 +185,19 @@ Run ends
 
 ### Full Data Flow
 ```
-1. Robot sensors → LiveKit → Vision Agent (sees the world)
-2. Vision Agent → Band room (broadcasts scene description)
-3. Threat Agent reads scene → if critical hazard, fires Reflex Arc (jumps to step 8)
-4. Conductor reads scene → makes ONE synchronous decision → dispatches task to Band room
-5. Upper Body + Lower Body agents receive task
-6. Upper Body ↔ Lower Body: peer negotiation via Band (resolve physical conflicts)
+1. Robot sensors → LiveKit → Vision Agent (sees the world, describes obstacles per-side)
+2. Vision Agent → Band room (broadcasts scene description with LEFT/RIGHT context)
+3. Threat Agent reads scene → if CRITICAL, fires Reflex Arc (jump to step 8)
+4. Conductor reads scene → makes ONE synchronous decision → dispatches tasks to Band room
+5. UpperLeft + UpperRight + Lower agents receive task simultaneously
+6. UpperLeft ↔ UpperRight ↔ Lower: peer negotiation via Band (resolve physical conflicts)
 7. Safety Agent reviews coordinated plan, vetoes if unsafe
-8. Conductor synthesizes approved plan → final command → LiveKit → Robot guides the person
+8. Conductor synthesizes approved plan → final command → LiveKit → Robot guides both people
 9. All steps → Arize Phoenix (traced)
+
+Reflex Arc (bypasses Conductor):
+3b. Threat → Spine → @UpperLeft @UpperRight @Lower [HALT] (~90ms)
+    Safety notified in parallel; Conductor notified after the fact
 ```
 
 ---
@@ -192,11 +209,11 @@ Every agent call instrumented:
 - **Output** — agent decision / plan
 - **Latency** — per agent, surfaced in dashboard
 - **Decision path** — cortical (slow) or reflex (fast)
-- **Peer coordination messages** — Upper Body ↔ Lower Body negotiation
+- **Peer coordination messages** — UpperLeft ↔ UpperRight ↔ Lower negotiation
 - **Veto events** — when Safety Agent blocks a command and why
-- **Neuroplasticity diff** — before/after prompt changes between runs, correlated with smoother/safer navigation
+- **Neuroplasticity diff** — before/after prompt changes between runs
 
-Evaluator prompt: *did this decision keep the blind user safe and successfully navigate the environment?*
+Evaluator prompt: *did this decision keep both blind users safe and successfully navigate the environment?*
 
 ---
 
@@ -208,10 +225,10 @@ Follow strictly. Do not skip ahead.
 2. **LiveKit room** — connect to robot camera/depth stream (or webcam/sim fallback). Verify frames flowing.
 3. **Vision Agent + Conductor in Band** — two agents passing messages. Minimum viable loop, unblocks everyone.
 4. **Arize tracing** — instrument both agents. Verify traces appear in local dashboard.
-5. **Upper Body + Lower Body agents** — add tactical agents responding to Conductor tasks in parallel.
-6. **Peer coordination** — wire Upper Body ↔ Lower Body to negotiate via Band before executing.
-7. **Threat Agent + Safety Agent** — hazard detection and veto/STOP logic live. Test an unsafe command getting blocked.
-8. **Reflex Arc** — wire Threat Agent to bypass Conductor for fast-path STOP. Measure and log latency difference.
+5. **UpperLeft + UpperRight + Lower agents** — add tactical agents responding to Conductor tasks in parallel.
+6. **Peer coordination** — wire UpperLeft ↔ UpperRight ↔ Lower to negotiate via Band before executing.
+7. **Threat Agent + Spine + Safety Agent** — hazard detection, fast reflex coordinator, veto/STOP logic.
+8. **Reflex Arc** — wire Threat → Spine → joint agents, bypassing Conductor. Measure latency difference.
 9. **Neuroplasticity loop** — Conductor reads Arize traces, rewrites agent prompts. One visible before/after.
 10. **Demo dashboard** — Arize traces + robot feed side by side.
 
@@ -221,10 +238,10 @@ Follow strictly. Do not skip ahead.
 
 | Prize | Sponsor | Amount | How We Win |
 |-------|---------|--------|------------|
-| Physical AI Hack | UFB | $3,000 | End-to-end assistive robot control, production-grade hierarchical architecture |
-| Multi-agent collaboration | Band | $1,000 | 5+ agents, two distinct comms patterns (top-down + peer), all external agents |
-| Observability improves the app | Arize | $1,000 | Live fMRI dashboard + neuroplasticity before/after, evaluator on user safety |
-| Science/Engineering | Ddoski's Lab | $5,000 | Novel hierarchical latency design + peer tactical coordination + social impact framing |
+| Physical AI Hack | UFB | $3,000 | End-to-end assistive robot control on Booster K1, production-grade hierarchical architecture, dual-person use case |
+| Multi-agent collaboration | Band | $1,000 | 6+ agents, two distinct comms patterns (top-down + peer), all external agents |
+| Observability improves the app | Arize | $1,000 | Live fMRI dashboard + neuroplasticity before/after, evaluator on dual-person safety |
+| Science/Engineering | Ddoski's Lab | $5,000 | Novel hierarchical latency design + dual-person guidance + social impact framing |
 
 **Total potential: $10,000**
 
@@ -234,8 +251,8 @@ Follow strictly. Do not skip ahead.
 
 | Member | Area | Owns |
 |--------|------|------|
-| **Eshwar** | Agent Architecture & Band (The Brain) | Conductor, Upper Body, Lower Body, Threat agents; Reflex Arc; Neuroplasticity loop |
-| **Advaita** | Nebius & Vision Agent (The Eyes) | Nebius compute platform setup; Vision Agent perception |
+| **Eshwar** | Agent Architecture & Band (The Brain) | Conductor, UpperLeft, UpperRight, Lower, Threat, Spine agents; Reflex Arc; Neuroplasticity loop |
+| **Advaita** | Nebius & Vision Agent (The Eyes) | Nebius compute platform setup; Vision Agent perception (with left/right scene split) |
 | **Adil** | LiveKit & Robot I/O (The Body) | LiveKit room/streaming; Conductor command → LiveKit → robot return path; webcam fallback sim; UFB booth lead |
 | **Matthew** | Observability, Safety & Demo (The Reflexes & fMRI) | Arize Phoenix; Safety Agent; evaluator prompt; demo dashboard; Arize booth lead |
 
@@ -248,30 +265,40 @@ See `roles.md` for full responsibilities, deliverables, and hour-by-hour build o
 | Tool | Notes |
 |------|-------|
 | Python 3.11+ | Primary language |
-| `google-generativeai` SDK | Gemini API — `gemini-1.5-flash` for all agents |
-| Band SDK | LangChain or CrewAI — Eshwar decides early, everyone follows |
+| `langchain-google-genai` | `gemini-1.5-flash` for all agents |
+| `langgraph` | Agent framework — `LangGraphAdapter` for Band integration |
+| Band SDK (`band`) | Multi-agent communication — external agents, `LangGraphAdapter` |
 | Arize Phoenix | `pip install arize-phoenix` — local, no API key |
 | LiveKit Python SDK | Sensor stream in, motor commands out |
-| LangChain or CrewAI | Agent framework — consistent across all agents |
 | Nebius Physical Workbench | UFB's required compute platform — set up before anything else |
+| Booster K1 | Target hardware robot (UFB on-site) |
 
-### Agent LLM Configuration (Semi-Deterministic)
-All agents use Gemini with:
-- `temperature=0.1` — near-deterministic, consistent behavior across runs
-- `response_mime_type="application/json"` — structured output enforced at the API level
-- Retry once on parse failure with an explicit correction prompt
-- System prompt always ends with: *"Respond ONLY with valid JSON matching the schema. No explanation outside the JSON."*
+### Agent LLM + Band Setup (Same Pattern for All Eshwar's Agents)
 
 ```python
-import google.generativeai as genai
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel(
-    "gemini-1.5-flash",
-    generation_config=genai.GenerationConfig(
-        temperature=0.1,
-        response_mime_type="application/json",
-    )
+import asyncio, os
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.checkpoint.memory import InMemorySaver
+from band import Agent, run_with_graceful_shutdown
+from band.adapters import LangGraphAdapter
+
+load_dotenv()
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-1.5-flash",
+    temperature=0.1,
+    google_api_key=os.environ["GEMINI_API_KEY"],
 )
+adapter = LangGraphAdapter(llm=llm, checkpointer=InMemorySaver(), custom_section=AGENT_INSTRUCTIONS)
+agent = Agent.create(
+    adapter=adapter,
+    agent_id=os.environ["AGENT_UUID"],       # from agent_config.yaml
+    api_key=os.environ["AGENT_API_KEY"],     # from agent_config.yaml
+    ws_url="wss://app.band.ai/api/v1/socket/websocket",
+    rest_url="https://app.band.ai",
+)
+asyncio.run(run_with_graceful_shutdown(agent))
 ```
 
 ---
@@ -282,7 +309,7 @@ model = genai.GenerativeModel(
 ### Conductor Agent — Input
 ```json
 {
-  "scene": "string — from Vision Agent via Band",
+  "scene": "string — from Vision Agent via Band (includes left/right obstacle breakdown)",
   "last_action": "string — what was last sent to robot",
   "user_state": "WALKING | STOPPED | TURNING",
   "arize_feedback": "string — optional, injected between runs for neuroplasticity"
@@ -293,70 +320,43 @@ model = genai.GenerativeModel(
 {
   "decision": "MOVE_FORWARD | TURN_LEFT | TURN_RIGHT | STOP | SLOW_DOWN",
   "reason": "one sentence",
-  "upper_body_task": "SIGNAL_LEFT | SIGNAL_RIGHT | SIGNAL_STOP | SIGNAL_FORWARD | HOLD",
-  "lower_body_task": "WALK | SLOW | STOP | STEP_OVER | NAVIGATE_CURB"
+  "upper_left_task": "SIGNAL_LEFT | SIGNAL_RIGHT | SIGNAL_STOP | SIGNAL_FORWARD | HOLD",
+  "upper_right_task": "SIGNAL_LEFT | SIGNAL_RIGHT | SIGNAL_STOP | SIGNAL_FORWARD | HOLD",
+  "lower_task": "WALK | SLOW | STOP | STEP_OVER | NAVIGATE_CURB"
 }
 ```
 
-### Upper Body Agent — Input
-```json
-{
-  "task": "SIGNAL_LEFT | SIGNAL_RIGHT | SIGNAL_STOP | SIGNAL_FORWARD | HOLD",
-  "lower_body_status": "string — from peer negotiation with Lower Body Agent",
-  "scene": "string"
-}
-```
-### Upper Body Agent — Output
-```json
-{
-  "arm_action": "GENTLE_LEFT_PULL | GENTLE_RIGHT_PULL | FORWARD_PUSH | HOLD_STEADY | RELEASE",
-  "ready": true,
-  "conflict": "string or null — e.g. 'need arm free for balance'"
-}
-```
+### UpperLeft Agent — Input / Output
+Input: `{ "task": "...", "lower_status": "...", "upper_right_status": "...", "scene_left": "..." }`
+Output: `{ "arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "ready": true, "conflict": null }`
 
-### Lower Body Agent — Input
-```json
-{
-  "task": "WALK | SLOW | STOP | STEP_OVER | NAVIGATE_CURB",
-  "upper_body_status": "string — from peer negotiation with Upper Body Agent",
-  "scene": "string"
-}
-```
-### Lower Body Agent — Output
-```json
-{
-  "gait_action": "WALK_NORMAL | WALK_SLOW | PAUSE | STEP_HIGH | STEP_DOWN | HALT",
-  "pace_ms": 500,
-  "ready": true,
-  "conflict": "string or null"
-}
-```
+### UpperRight Agent — Input / Output
+Input: `{ "task": "...", "lower_status": "...", "upper_left_status": "...", "scene_right": "..." }`
+Output: `{ "arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "ready": true, "conflict": null }`
 
-### Threat Agent — Input
-```json
-{
-  "scene": "string — reads directly from Vision Agent output, independently of Conductor"
-}
-```
-### Threat Agent — Output
-```json
-{
-  "threat_level": "NONE | LOW | HIGH | CRITICAL",
-  "threat_type": "VEHICLE | OBSTACLE | DROP | PERSON | null",
-  "fire_reflex": false,
-  "reflex_command": "EMERGENCY_STOP | null"
-}
-```
-If `fire_reflex: true` → bypasses Conductor entirely, triggers Safety Agent + Joint Agents directly (Reflex Arc path).
+### Lower Agent — Input / Output
+Input: `{ "task": "...", "upper_left_status": "...", "upper_right_status": "...", "scene": "..." }`
+Output: `{ "gait_action": "WALK_NORMAL|WALK_SLOW|PAUSE|STEP_HIGH|STEP_DOWN|HALT", "pace_ms": 500, "ready": true, "conflict": null }`
+
+### Spine Agent — Input / Output
+Input: `{ "reflex_command": "EMERGENCY_STOP", "threat_type": "VEHICLE|OBSTACLE|DROP|PERSON" }`
+Output: immediately @mentions `@UpperLeft @UpperRight @Lower` with `{ "command": "HALT", "timestamp": ... }`
+Spine does NOT wait — fires synchronously to all joint agents, Safety notified in parallel.
+
+### Threat Agent — Input / Output
+Input: `{ "scene": "string — from Vision Agent" }`
+Output: `{ "threat_level": "NONE|LOW|HIGH|CRITICAL", "threat_type": "VEHICLE|OBSTACLE|DROP|PERSON|null", "fire_reflex": false, "reflex_command": "EMERGENCY_STOP|null" }`
+If `fire_reflex: true` → @mentions Spine immediately, bypasses Conductor.
 
 ---
 
 ## Key Constraints
 
 - **Hackathon rule**: no pre-built code. Everything written June 20–21.
-- **Conductor is synchronous** — one decision at a time. Intentional. Prevents desync on the critical path.
-- **Tactical agents coordinate peer-to-peer** — they negotiate with each other via Band before executing, not just receive top-down orders.
+- **Robot**: Booster K1 humanoid (UFB on-site). Fallback: sim or webcam.
+- **Conductor is synchronous** — one decision at a time. Prevents desync on the critical path.
+- **Tactical agents coordinate peer-to-peer** — negotiate with each other via Band before executing.
+- **UpperLeft always initiates PEER_CHECK to Lower** — never the other way, to avoid deadlock.
 - **One job per agent** — short, focused system prompts. Do not combine responsibilities.
 - **External agents on Band** — register with `agent name` + `API key`, run in our process.
 - **Nebius first** — Advaita sets this up before LiveKit or anything else robot-side.
@@ -364,22 +364,57 @@ If `fire_reflex: true` → bypasses Conductor entirely, triggers Safety Agent + 
 
 ---
 
-## Open Questions
+## Band Agent Config (Eshwar's 6 Agents — Already Registered)
 
-- LangChain vs CrewAI — Eshwar decides early, everyone follows
-- Band room message schema — how do peer-to-peer tactical messages differ from top-down conductor messages? Same room, tagged differently?
-- UFB robot API and control interface at the event
-- Arize trace API — how Conductor reads traces programmatically for neuroplasticity loop
+```yaml
+# agent_config.yaml (gitignored)
+conductor:
+  agent_id: "1f72f6d2-b26a-4e2d-a17d-33f837fbcb85"
+  api_key: "REDACTED_CONDUCTOR_KEY"
+  handle: "@eshwar.rajasekar/conductor"
+
+upper_left:
+  agent_id: "3f45823f-3d8a-45fa-a842-eae788d59050"
+  api_key: "REDACTED_UPPERLEFT_KEY"
+  handle: "@eshwar.rajasekar/upperleft"
+
+upper_right:
+  agent_id: "73f0bb96-9f44-4e07-9944-db74a8078d30"
+  api_key: "REDACTED_UPPERRIGHT_KEY"
+  handle: "@eshwar.rajasekar/upperright"
+
+lower:
+  agent_id: "c61be48a-eed0-4bce-8deb-6fe7a9ee4bc1"
+  api_key: "REDACTED_LOWER_KEY"
+  handle: "@eshwar.rajasekar/lower"
+
+threat:
+  agent_id: "9373ba73-3cf4-4f5d-a4f7-abbae6f9876e"
+  api_key: "REDACTED_THREAT_KEY"
+  handle: "@eshwar.rajasekar/threat"
+
+spine:
+  agent_id: "d8c41589-648f-41d6-a273-f9c958c8f342"
+  api_key: "REDACTED_SPINE_KEY"
+  handle: "@eshwar.rajasekar/spine"
+```
 
 ---
 
 ## Status
 
-**Architecture locked. Use case locked (assistive guide robot for blind people). Name: Baymax. No code written yet.**
+**Architecture locked. Use case locked (dual-person assistive guide robot for blind people). Robot: Booster K1. Name: Baymax.**
+
+Done:
+- [x] All 6 Band agents registered (Conductor, UpperLeft, UpperRight, Lower, Threat, Spine)
+- [x] API keys and UUIDs in `.env`
 
 Waiting on:
-- [ ] Nebius Physical Workbench setup + UFB compute credit
-- [ ] Band docs / API
-- [ ] Arize Phoenix integration docs
+- [ ] Band room `baymax-coordination` created (add all agents to it)
+- [ ] `agent_config.yaml` created (gitignored) — copy from section above
+- [ ] Nebius Physical Workbench setup + UFB compute credit (Advaita)
+- [ ] Vision Agent registered in Band (Advaita)
+- [ ] Safety Agent registered in Band (Matthew)
+- [ ] LiveKit setup (Adil)
+- [ ] Arize Phoenix integration (Matthew)
 - [ ] UFB robot API / simulator details
-- [ ] LiveKit setup

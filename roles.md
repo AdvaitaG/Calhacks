@@ -7,30 +7,31 @@
 
 **Own the intelligence layer. Everything that happens inside the Band room.**
 
-### Agents
-- **Conductor Agent** (Prefrontal Cortex) — plans the safe navigation route, issues tasks to joint agents, synthesizes final command, reads Arize traces between sessions for neuroplasticity
-- **Upper Body Agent** (Motor Cortex) — controls the guiding arm and hand signals: gentle left, right, stop, forward
-- **Lower Body Agent** (Cerebellum) — manages walking pace, stops at curbs/stairs, adjusts for terrain
-- **Threat Agent** (Amygdala) — reads scene description, detects vehicles/obstacles/sudden danger, fires reflex arc when critical
+### Agents (all 6 already registered in Band)
+- **Conductor** (Prefrontal Cortex) — plans safe navigation route, dispatches tasks to UpperLeft/UpperRight/Lower, reads Arize traces between sessions for neuroplasticity
+- **UpperLeft** (Motor Cortex — Left) — controls the LEFT guiding arm; responsible for the blind person on the left side
+- **UpperRight** (Motor Cortex — Right) — controls the RIGHT guiding arm; responsible for the blind person on the right side
+- **Lower** (Cerebellum) — manages walking pace, stops at curbs/stairs, adjusts for terrain
+- **Spine** (Spinal Cord) — fast-path reflex coordinator; immediately HALTs UpperLeft/UpperRight/Lower when Threat fires
+- **Threat** (Amygdala) — reads scene description, detects vehicles/obstacles/sudden danger, fires reflex arc when CRITICAL
 
 ### Responsibilities
-- Set up the Band shared room and register all agents
-- Pick the agent framework (LangChain or CrewAI) — decide early, everyone follows
-- Wire Upper Body + Lower Body to run in parallel (they don't wait on each other)
-- Implement the **Reflex Arc**: Threat Agent bypasses Conductor for fast-path stop (~90ms)
+- Create the Band shared room (`baymax-coordination`) and add all agents
+- Framework decided: **LangGraph + LangChain** (`LangGraphAdapter` + `ChatGoogleGenerativeAI`) — Gemini, not Claude
+- Wire UpperLeft + UpperRight + Lower to run in parallel (they don't wait on each other)
+- Implement the **Reflex Arc**: Threat → Spine → joint agents, bypassing Conductor (~90ms)
 - Implement the **Neuroplasticity loop**: Conductor reads Arize traces after each session, rewrites underperforming agent prompts, produces visible before/after diff
 
 ### Deliverables
-- [ ] Band room running with Vision + Conductor passing messages (unblocks everyone)
-- [ ] Upper Body + Lower Body agents responding in parallel to Conductor navigation tasks
-- [ ] Threat Agent firing urgency signals into Band room
-- [ ] Reflex Arc wired — latency measurably faster than cortical path
+- [x] All 6 agents registered in Band (API keys + UUIDs in .env)
+- [ ] Band room `baymax-coordination` created with all agents
+- [ ] UpperLeft + UpperRight + Lower agents responding in parallel to Conductor tasks
+- [ ] Threat → Spine → Reflex Arc wired — latency measurably faster than cortical path
 - [ ] Neuroplasticity loop: one visible prompt rewrite driven by Arize traces
 
 ### Stack
-- Band SDK
-- LangChain or CrewAI (your call — own this decision)
-- Claude API (`claude-sonnet-4-6`) for all agent prompts
+- Band SDK (`band`) + `LangGraphAdapter`
+- `langchain-google-genai` — Gemini (`gemini-1.5-flash`, `temperature=0.1`)
 - Arize trace API (read side — for neuroplasticity loop)
 
 ---
@@ -56,7 +57,7 @@
 
 ### Stack
 - **Nebius Physical Workbench** (start here)
-- Claude API (Vision Agent prompt)
+- `langchain-google-genai` — Gemini (`gemini-1.5-flash`) for Vision Agent
 - Band SDK (Vision Agent publish)
 - LiveKit Python SDK (receive side only — consuming frames from Adil's stream)
 
@@ -113,7 +114,7 @@
 ### Stack
 - Arize Phoenix (`pip install arize-phoenix`) — local, no API key
 - Band SDK (Safety Agent subscribes to all outputs)
-- Claude API (Safety Agent prompt + evaluator prompt)
+- `langchain-google-genai` — Gemini (`gemini-1.5-flash`) for Safety Agent + evaluator
 - Frontend: Streamlit or simple HTML/JS for dashboard
 
 ---

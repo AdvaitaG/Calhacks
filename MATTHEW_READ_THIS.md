@@ -17,15 +17,22 @@ You own two things: the Safety Agent (the last gate before any command reaches t
 
 ## What You Receive (Two Paths)
 
-### Normal Path — from Upper Body + Lower Body (via Band)
+### Normal Path — from UpperLeft + UpperRight + Lower (via Band)
 ```
 @Safety [READY]: {
-  "upper_body": {
+  "upper_left": {
     "arm_action": "GENTLE_LEFT_PULL",
+    "side": "LEFT",
     "ready": true,
     "conflict": null
   },
-  "lower_body": {
+  "upper_right": {
+    "arm_action": "FORWARD_PUSH",
+    "side": "RIGHT",
+    "ready": true,
+    "conflict": null
+  },
+  "lower": {
     "gait_action": "WALK_SLOW",
     "pace_ms": 600,
     "ready": true,
@@ -53,7 +60,8 @@ You own two things: the Safety Agent (the last gate before any command reaches t
 @Conductor [APPROVED]: {
   "approved": true,
   "final_plan": {
-    "arm_action": "GENTLE_LEFT_PULL",
+    "left_arm_action": "GENTLE_LEFT_PULL",
+    "right_arm_action": "FORWARD_PUSH",
     "gait_action": "WALK_SLOW",
     "pace_ms": 600
   }
@@ -72,7 +80,7 @@ You own two things: the Safety Agent (the last gate before any command reaches t
 
 ### On reflex arc — always approve EMERGENCY_STOP:
 ```
-@UpperBody @LowerBody [REFLEX_APPROVED]: {
+@UpperLeft @UpperRight @Lower [REFLEX_APPROVED]: {
   "command": "HALT"
 }
 ```
@@ -192,7 +200,7 @@ Every agent span MUST include these attributes. Eshwar filters on them.
 
 | Attribute | Type | What it is |
 |-----------|------|------------|
-| `agent` | string | `"conductor" | "upper_body" | "lower_body" | "threat" | "vision" | "safety"` |
+| `agent` | string | `"conductor" | "upper_left" | "upper_right" | "lower" | "spine" | "threat" | "vision" | "safety"` |
 | `input.scene` | string | The scene JSON that triggered this decision |
 | `output.decision` | string | What the agent decided |
 | `outcome` | string | `"SUCCESS" | "VETOED" | "REFLEX" | "TIMEOUT"` |

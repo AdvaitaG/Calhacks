@@ -2,6 +2,8 @@
 
 Your job is the Vision Agent. You receive the robot's camera feed from Adil's LiveKit stream, describe what you see, and post it to the Band room. Eshwar's Conductor and Threat agents consume your output — so the format below is a hard contract. Do not change field names without talking to Eshwar.
 
+**Key context:** The robot is a **Booster K1** humanoid guiding **two blind people simultaneously** — one on the LEFT side, one on the RIGHT side. Your scene description must include per-side obstacle breakdowns so UpperLeft and UpperRight agents can make independent decisions for each person.
+
 ---
 
 ## Your Stack
@@ -46,12 +48,22 @@ The JSON must match this schema **exactly** — field names, types, and enum val
       "moving": true
     }
   ],
+  "left_side": {
+    "hazard_level": "NONE | LOW | HIGH | CRITICAL",
+    "description": "What the person on the LEFT needs to know — obstacles, clearance, surface"
+  },
+  "right_side": {
+    "hazard_level": "NONE | LOW | HIGH | CRITICAL",
+    "description": "What the person on the RIGHT needs to know — obstacles, clearance, surface"
+  },
   "clear_path": "FORWARD | LEFT | RIGHT | NONE",
   "surface": "FLAT | CURB | STAIRS_UP | STAIRS_DOWN | UNEVEN | UNKNOWN",
   "hazard_level": "NONE | LOW | HIGH | CRITICAL",
   "timestamp": 1718900000000
 }
 ```
+
+`left_side` and `right_side` are new fields — they give UpperLeft and UpperRight agents independent context for each person they're guiding. `hazard_level` at the top level is the overall worst-case (Threat Agent reads this first).
 
 ### Field definitions
 
