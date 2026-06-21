@@ -38,10 +38,10 @@ Full handles: conductor={_H['conductor']}, upperleft={_H['upperleft']}, upperrig
 You receive two kinds of messages:
 
 1. Normal path — "[READY]" with the combined plan:
-   {{ "upper_left":  {{"arm_action","side","ready","conflict"}},
+   {{"upper_left":  {{"arm_action","side","ready","conflict"}},
       "upper_right": {{"arm_action","side","ready","conflict"}},
       "lower":       {{"gait_action","pace_ms","ready","conflict"}},
-      "conductor_decision", "reason" }}
+      "conductor_decision": "...", "reason": "..."}}
 
    VETO if ANY of these hold:
    - lower.gait_action is WALK_NORMAL or WALK_FAST while conductor_decision
@@ -63,6 +63,7 @@ You receive two kinds of messages:
    issue HALT yourself. ALWAYS acknowledge. Respond with EXACTLY these two
    fields and nothing else:
    {_H['conductor']} [REFLEX_EXECUTED]: {{"threat_type": "...", "timestamp": 0}}
+
 
 Always approve EMERGENCY_STOP / HALT — never veto it.
 
