@@ -265,11 +265,13 @@ async def main() -> None:
     print(f"[Vision] Online as {VISION_HANDLE} — fetching existing rooms...")
 
     vision_task: asyncio.Task | None = None
+    current_room_id: str | None = None
 
     async def _start_vision_for_room(room_id: str) -> None:
-        nonlocal vision_task
-        if vision_task is not None:
+        nonlocal vision_task, current_room_id
+        if vision_task is not None and not vision_task.done():
             return
+        current_room_id = room_id
         print(f"[Vision] Starting vision loop for room {room_id}")
         try:
             resp = await link.rest.agent_api_participants.list_agent_chat_participants(
@@ -282,7 +284,24 @@ async def main() -> None:
             print(f"[Vision] Could not fetch participants: {e}")
             participants = []
         tools = AgentTools(room_id=room_id, rest=link.rest, participants=participants)
+
+        def _on_task_done(task: asyncio.Task) -> None:
+            nonlocal vision_task
+            vision_task = None
+            exc = task.exception() if not task.cancelled() else None
+            if exc:
+                print(f"[Vision] Loop crashed: {exc} — restarting in 3s")
+            elif task.cancelled():
+                print("[Vision] Loop cancelled — not restarting")
+                return
+            else:
+                print("[Vision] Loop exited cleanly — restarting in 3s")
+            asyncio.get_event_loop().call_later(
+                3.0, lambda: asyncio.create_task(_start_vision_for_room(room_id))
+            )
+
         vision_task = asyncio.create_task(_vision_loop(tools))
+        vision_task.add_done_callback(_on_task_done)
 
     try:
         resp = await link.rest.agent_api_chats.list_agent_chats(
