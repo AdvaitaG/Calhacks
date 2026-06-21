@@ -1,4 +1,5 @@
-band
+band-sdk
+langchain
 langchain-google-genai
 langgraph
 python-dotenv
