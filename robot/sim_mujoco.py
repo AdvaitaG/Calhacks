@@ -87,6 +87,7 @@ class MujocoSink:
         self.x, self.y, self.yaw = 0.0, 0.0, 0.0
         self.base_z = float(self.home[2])
         self.phase = 0.0  # gait cycle phase
+        self._wave_until = 0.0  # kinematic wave active until this monotonic time
         self._last_t: float | None = None
         self._viewer = viewer
         self._last_log = None
@@ -138,8 +139,22 @@ class MujocoSink:
         q[ip] += (tp - q[ip]) * 0.25
         q[ir] += (tr - q[ir]) * 0.25
 
+    def WaveHand(self, hand_action=None) -> None:  # noqa: N802 (mirror SDK name)
+        """Kinematic wave — mirrors B1LocoClient.WaveHand. Waves the right arm
+        for ~2.5s; the wave overrides arm signals while active."""
+        self._wave_until = time.monotonic() + 2.5
+        logger.info("[sim] WaveHand")
+
     def apply_actions(self, cmd) -> None:
         """Drive the arms from a FINAL_COMMAND's arm actions (or None -> rest)."""
+        if time.monotonic() < self._wave_until:
+            # raise the right arm and oscillate it like a wave
+            q = self.data.qpos
+            w = math.sin((self._wave_until - time.monotonic()) * 10.0)
+            q[ARM["R_sh_pitch"]] = self.home[ARM["R_sh_pitch"]] - 1.6   # arm up
+            q[ARM["R_sh_roll"]] = self.home[ARM["R_sh_roll"]] + 0.4 * w  # wave side-to-side
+            self._set()
+            return
         if cmd is None:
             la = ra = "HOLD_STEADY"
             emergency = False

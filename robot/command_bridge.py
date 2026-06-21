@@ -288,8 +288,14 @@ async def run(source: AsyncIterator[str], client: B1LocoClientStub) -> None:
 
 
 def _make_sink(name: str):
-    """sink selector: 'stub' logs velocities; 'mujoco' drives the local sim.
-    Add '--view' to open the MuJoCo viewer (driven live by Band commands)."""
+    """sink selector — all mirror the B1LocoClient interface (Move/damp/...):
+      'stub'   logs velocities
+      'mujoco' drives the local MuJoCo sim (add '--view' for the window)
+      'real'   drives the actual K1 via the SDK (booth; needs booster_robotics_sdk)
+    """
+    if name == "real":
+        from b1_loco_client_sink import B1LocoClientSink
+        return B1LocoClientSink()
     if name == "mujoco":
         from sim_mujoco import MujocoSink, _front_view
         sink = MujocoSink()
