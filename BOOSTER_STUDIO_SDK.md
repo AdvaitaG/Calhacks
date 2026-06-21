@@ -40,13 +40,30 @@ So all SDK + Studio work lives in a dedicated **Ubuntu-22.04 WSL distro**.
 
 ## Status
 - [x] SDK C++ libs + Fast-DDS installed on 22.04 (`sudo ./install.sh` succeeded).
-- [ ] Python binding `booster_robotics_sdk_python` — last step was the pybind11
-      CMake path fix; gate is `python3 -c "import booster_robotics_sdk_python"`.
-- [ ] Python venv on 22.04 — via `scripts/setup_22.sh` (venv lives in `~`).
+- [x] **Python binding `booster_robotics_sdk_python` installed — `SDK ok`.**
+      `python3 -c "import booster_robotics_sdk_python"` works.
 - [ ] **Booster Studio installed** — download is in the login-gated K1 manual
       (we own a K1, so we have access): https://booster.feishu.cn/wiki/E3q5wF5SnitXZgkY18Uc8odBnXb
 - [ ] Smoke test connects to Studio: `robot/sdk_smoke_test.py`.
 - [ ] Full pipeline → Studio: `python command_bridge.py band real`.
+
+### How the SDK actually got installed (avoid the dead ends we hit)
+1. **Ubuntu 22.04 only.** 24.04 cannot build it. Clone into the **Linux home**
+   (`~`), never `/mnt/c` (DrvFs breaks git/builds).
+2. `cd ~/booster_robotics_sdk && sudo ./install.sh`  (installs Fast-DDS + C++ libs)
+3. `pip install --user booster_robotics_sdk_python`  ← **this is the one that works.**
+   It builds from source with pip's build isolation, which pulls the correct
+   pybind11 automatically. Do NOT build the Python binding by hand with cmake —
+   Ubuntu's apt pybind11 (2.9.1) is too old and fails on `SendApiRequest`; the
+   pip build uses the right (latest) pybind11 and compiles cleanly.
+   - There is NO prebuilt wheel on PyPI (source-only), so `--only-binary` fails.
+   - `scripts/build_sdk_22.sh` was the manual route — kept for reference, but the
+     pip install above is simpler and what succeeded.
+4. Verify: `python3 -c "import booster_robotics_sdk_python; print('SDK ok')"`
+
+Note: the venv (`scripts/setup_22.sh`) is NOT needed for the SDK/smoke test —
+the SDK installs into system `python3`. The venv only matters later for the full
+Band pipeline, which has its own Python 3.10-vs-3.11 (`band-sdk`) split to solve.
 
 ## Key files
 | File | Role |
@@ -65,7 +82,26 @@ So all SDK + Studio work lives in a dedicated **Ubuntu-22.04 WSL distro**.
 5. `python3 robot/sdk_smoke_test.py` → K1 should walk/turn/wave in Studio.
 6. `python command_bridge.py band real` → live pipeline drives Studio.
 
-## Fallback if Studio is blocked
-`socrob/booster_webots_sim` (open-source Docker: Webots + Booster Control Runner +
-Fast-DDS) gives the same real presets without the gated download — needs Docker
-Desktop with WSL integration.
+## BLOCKER (2026-06-21): no K1 sim runner access
+A K1 sim with real presets needs Booster's **K1 control runner**
+(`booster-runner-full-webots-k1-0.0.1.run`), which is gated behind the K1
+**owner's** Booster account. No one on the team owns the K1 / has wiki access,
+so this file is unobtainable for now → the real-preset K1 sim is **blocked by
+access**, not by setup. The SDK itself is installed and ready (`SDK ok`); we're
+blocked on exactly one external file.
+
+Notes on the alternatives we checked:
+- `socrob/booster_webots_sim` (open Docker) DOES give real `B1LocoClient` presets
+  (its `sdk-client` = `b1_loco_example_client`, `start-runner` = Booster control
+  runner) — BUT it ships only the **T1** (worlds `T1_*.wbt`, T1 runners). There is
+  **no open-source K1 runner**. So it simulates a T1, not the K1, and is a heavy
+  multi-GB GPU build (ROS2 Humble + SDK + Webots).
+- There is no public K1 walk checkpoint for a MuJoCo RL gait either (see
+  [[k1-sdk-presets]]) — that path needs GPU training.
+
+### Decision
+- **Demo path:** ship the existing no-SDK MuJoCo K1 (`robot/sim_mujoco.py --view`).
+  Correct robot, works today, motion is approximated but reads fine in a demo.
+- **To unlock real presets:** get the K1 `.run` or wiki login from whoever
+  *provided* the K1 (Calhacks organizer / Booster sponsor rep / the buyer). The
+  SDK side is done, so it's then a drop-in.
