@@ -263,19 +263,30 @@ async def run(source: AsyncIterator[str], client: B1LocoClientStub) -> None:
     ticker.cancel()
 
 
+def _make_sink(name: str):
+    """sink selector: 'stub' logs velocities; 'mujoco' drives the local sim."""
+    if name == "mujoco":
+        from sim_mujoco import MujocoSink
+        return MujocoSink()
+    return B1LocoClientStub()
+
+
 def main() -> None:
     logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO").upper(),
                         format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
+    # usage: command_bridge.py [mock|band] [stub|mujoco]
     mode = sys.argv[1] if len(sys.argv) > 1 else "mock"
+    sink_name = sys.argv[2] if len(sys.argv) > 2 else "stub"
+    sink = _make_sink(sink_name)
 
     if mode == "band":
         from _common import load_env  # loads .env from robot/ or repo root
         load_env()
-        logger.info("[bridge] HOUR-2 return path — LIVE Band source, stubbed K1")
-        asyncio.run(run(band_command_source(), B1LocoClientStub()))
+        logger.info("[bridge] HOUR-2 return path — LIVE Band source, sink=%s", sink_name)
+        asyncio.run(run(band_command_source(), sink))
     else:
-        logger.info("[bridge] HOUR-2 return path — MOCK mode (no Band, stubbed K1)")
-        asyncio.run(run(mock_command_source(), B1LocoClientStub()))
+        logger.info("[bridge] HOUR-2 return path — MOCK mode, sink=%s", sink_name)
+        asyncio.run(run(mock_command_source(), sink))
         logger.info("[bridge] demo complete")
 
 
