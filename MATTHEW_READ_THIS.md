@@ -1,13 +1,13 @@
-# MATTHEW READ THIS — Safety Agent + Arize Spec
+# MATTHEW READ THIS — Safety Agent + Observability Spec
 
-You own two things: the Safety Agent (the last gate before any command reaches the robot) and Arize Phoenix (the observability layer that traces every decision). Both are critical to the demo. The output schema below is a hard contract with Eshwar — do not change field names without talking to him.
+You own two things: the Safety Agent (the last gate before any command reaches the robot) and the observability layer (which traces every decision). Both are critical to the demo. The output schema below is a hard contract with Eshwar — do not change field names without talking to him.
 
 ---
 
 ## Your Stack
 
 - **Band** — Safety Agent lives in room `baymax-coordination`
-- **Arize Phoenix** — runs locally, no API key, `pip install arize-phoenix`
+- **Observability** — runs locally, no API key, `pip install <your observability tool>`
 - **LangChain + ChatGoogleGenerativeAI** — same LLM setup as Eshwar
 - **Gemini API key** — in your `.env` as `GEMINI_API_KEY`
 
@@ -145,13 +145,13 @@ Save API Key + UUID. Give to Eshwar for `agent_config.yaml`.
 
 ---
 
-# PART 2 — Arize Phoenix Setup
+# PART 2 — Observability Setup
 
 ## Install + Start
 
 ```bash
-pip install arize-phoenix opentelemetry-sdk opentelemetry-exporter-otlp
-python -m phoenix.server.main serve
+pip install <your observability tool>
+# start your local observability server
 ```
 
 Runs on **http://localhost:6006** by default. Dashboard opens in browser. Tell Eshwar the port — he reads from it for the neuroplasticity loop.
@@ -163,14 +163,14 @@ Runs on **http://localhost:6006** by default. Dashboard opens in browser. Tell E
 Add this to the top of every agent file (all 6 agents — coordinate with Eshwar and Advaita to add it to their files too):
 
 ```python
-import phoenix as px
+# initialize your observability/tracing SDK here
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 
-px.launch_app()  # only call this ONCE, in Matthew's Safety agent process
+# launch your local observability dashboard (once, in the Safety process)
 
 provider = TracerProvider(resource=Resource({"service.name": "baymax"}))
 provider.add_span_processor(
@@ -232,7 +232,7 @@ Return JSON only: {{"score": 3, "reason": "one sentence"}}
 """
 ```
 
-Run this evaluator over the Arize trace data after each run. The scores feed the neuroplasticity loop — Eshwar reads low-scoring spans and rewrites the relevant agent prompts.
+Run this evaluator over the decision-trace data after each run. The scores feed the neuroplasticity loop — Eshwar reads low-scoring spans and rewrites the relevant agent prompts.
 
 ---
 
@@ -249,14 +249,14 @@ Simplest version: Streamlit + `px.Client().get_spans_dataframe()` polled every 2
 
 ---
 
-## Arize Prize Checklist (Your Responsibility)
+## Observability Prize Checklist (Your Responsibility)
 
-- [ ] Arize Phoenix running locally, dashboard visible
+- [ ] the observability layer running locally, dashboard visible
 - [ ] Every agent call traced with required span attributes
 - [ ] Evaluator prompt scoring decisions after each run
 - [ ] One visible before/after: low score → Eshwar rewrites prompt → better score next run
 - [ ] Demo dashboard built and working
-- [ ] Visit Arize booth and walk them through it
+- [ ] Visit the observability sponsor booth and walk them through it
 
 ---
 
@@ -271,5 +271,5 @@ Simplest version: Streamlit + `px.Client().get_spans_dataframe()` polled every 2
 
 ## Coordinate With
 
-- **Eshwar** — agree on Arize server port (default 6006) and confirm span attribute names before you both write code
+- **Eshwar** — agree on the observability server port (default 6006) and confirm span attribute names before you both write code
 - **Everyone** — send them the 4-line OpenTelemetry setup snippet so they can add it to their agent files

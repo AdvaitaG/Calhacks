@@ -1,6 +1,6 @@
 # Baymax — A Nervous System for a Humanoid Guide Robot
 
-Baymax is a humanoid guide robot that safely navigates a person through the world. Each AI agent maps to a region of the human brain, the agents communicate through Band the way neurons fire signals, and Arize makes every decision visible like an fMRI of the robot's mind — all to safely guide a person through the world. The flagship demo guides a blindfolded person along a route: perceiving hazards, planning a safe path, and steering with gentle hand signals (left / right / stop / forward). A spinal-cord-style **Reflex Arc** lets the Threat Agent fire an emergency STOP in ~90ms, and **Neuroplasticity** lets the Conductor read Arize traces between sessions and rewrite underperforming agent prompts so each walk gets smoother and safer.
+Baymax is a humanoid guide robot that safely navigates a person through the world. Each AI agent maps to a region of the human brain, the agents communicate through Band the way neurons fire signals, and the observability layer makes every decision visible like an fMRI of the robot's mind — all to safely guide a person through the world. The flagship demo guides a blindfolded person along a route: perceiving hazards, planning a safe path, and steering with gentle hand signals (left / right / stop / forward). A spinal-cord-style **Reflex Arc** lets the Threat Agent fire an emergency STOP in ~90ms, and **Neuroplasticity** lets the Conductor read the decision traces between sessions and rewrite underperforming agent prompts so each walk gets smoother and safer.
 
 **For full project details, architecture, build order, and agent specs → see [`roles.md`](./roles.md)**
 
@@ -12,7 +12,7 @@ Baymax is a humanoid guide robot that safely navigates a person through the worl
 |---------|------|-------|
 | **UFB (Ultimate Bots)** | Physical AI Hack — end-to-end robot control | $3,000 |
 | **Band** | Multi-agent collaboration — 5+ agents coordinating | $1,000 |
-| **Arize Phoenix** | Observability — fMRI demo + neuroplasticity before/after | $1,000 |
+| **Observability** | fMRI demo + neuroplasticity before/after | $1,000 |
 | **Ddoski's Lab** | Science/Engineering track — reflex arc + social impact | $5,000 |
 
 **Total potential: $10,000**
@@ -23,7 +23,7 @@ Baymax is a humanoid guide robot that safely navigates a person through the worl
 
 ## Stack
 
-Python 3.11+ · Claude API (`claude-sonnet-4-6`) · Band · Arize Phoenix · LiveKit · LangChain or CrewAI · Nebius Physical Workbench
+Python 3.11+ · Claude API (`claude-sonnet-4-6`) · Band · Observability · LiveKit · LangChain or CrewAI · Nebius Physical Workbench
 
 ---
 

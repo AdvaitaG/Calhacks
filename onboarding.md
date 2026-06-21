@@ -20,9 +20,9 @@ We're building an AI system that controls a **Booster K1** humanoid guide robot 
 - **Amygdala** → Threat Agent (detects vehicles/obstacles/sudden danger, triggers fast reactions)
 - **Brainstem** → Safety Agent (reflexes, vetoes unsafe navigation commands)
 
-They all talk through **Band** (multi-agent communication platform), receive video from the robot via **LiveKit**, and every decision gets traced in real time by **Arize Phoenix** — the fMRI of the robot's brain.
+They all talk through **Band** (multi-agent communication platform), receive video from the robot via **LiveKit**, and every decision gets traced in real time by **the observability layer** — the fMRI of the robot's brain.
 
-> **One sentence:** We built a nervous system for a humanoid robot that simultaneously guides two blind people — each arm is an independent agent focused on its person, they communicate through Band the way neurons fire signals, and Arize makes every decision visible like an fMRI.
+> **One sentence:** We built a nervous system for a humanoid robot that simultaneously guides two blind people — each arm is an independent agent focused on its person, they communicate through Band the way neurons fire signals, and the observability layer makes every decision visible like an fMRI.
 
 ---
 
@@ -36,7 +36,7 @@ Most teams will wire one agent directly to a robot and call it done. We're doing
 
 3. **Two decision speeds** — slow deliberate decisions go through the Conductor (cortical path, ~800ms). Time-critical reactions bypass the Conductor entirely via a **Reflex Arc** (~90ms) through the Spine agent — for example, emergency STOP when a vehicle appears.
 
-4. **The robot gets smarter between runs** — after each run, the Conductor reads the Arize traces, identifies which agent decisions failed, and rewrites those agents' prompts. Navigation gets visibly smoother and safer. We call this **Neuroplasticity**.
+4. **The robot gets smarter between runs** — after each run, the Conductor reads the decision traces, identifies which agent decisions failed, and rewrites those agents' prompts. Navigation gets visibly smoother and safer. We call this **Neuroplasticity**.
 
 ---
 
@@ -48,7 +48,7 @@ Most teams will wire one agent directly to a robot and call it done. We're doing
 | **Nebius Physical Workbench** | UFB's required compute platform — how we access the physical AI environment |
 | **Band** | The communication layer between all agents (like neural pathways) |
 | **LiveKit** | Streams robot camera feed to agents; sends commands back to the robot |
-| **Arize Phoenix** | Traces every agent decision in real time — the fMRI dashboard |
+| **Observability** | Traces every agent decision in real time — the fMRI dashboard |
 | **Gemini** | `gemini-2.0-flash` via `langchain-google-genai` — powers every agent |
 | **LangGraph + LangChain** | Agent framework — `LangGraphAdapter` for Band. Eshwar decided, everyone follows. |
 | **Python** | Primary language (3.11+) |
@@ -69,13 +69,13 @@ Booster K1 → LiveKit (camera in) → Vision Agent → Band Room (baymax-coordi
                                                                 ↓
                                                     Conductor → LiveKit → Robot command
                                                                 ↓
-                                                          Arize Phoenix
+                                                          the observability layer
                                                       (traces everything)
 ```
 
 **Fast path (Reflex Arc):** Threat detects CRITICAL → Spine immediately HALTs UpperLeft + UpperRight + Lower (~90ms, bypasses Conductor).
 
-**Between runs (Neuroplasticity):** Conductor reads Arize traces → rewrites underperforming agent prompts → next run the robot guides more smoothly.
+**Between runs (Neuroplasticity):** Conductor reads the decision traces → rewrites underperforming agent prompts → next run the robot guides more smoothly.
 
 ---
 
@@ -83,9 +83,9 @@ Booster K1 → LiveKit (camera in) → Vision Agent → Band Room (baymax-coordi
 
 This is the arc we're presenting to judges:
 
-1. **Run 1:** Baymax guides two blindfolded people along a route with baseline prompts — hesitant, jerky, over-cautious. Arize dashboard live next to the walk — judges watch agent decisions light up like brain regions firing.
+1. **Run 1:** Baymax guides two blindfolded people along a route with baseline prompts — hesitant, jerky, over-cautious. The observability dashboard, live next to the walk — judges watch agent decisions light up like brain regions firing.
 2. **Between runs:** The Conductor reads the traces. Identifies a failure (e.g. the Lower Agent stopped too abruptly). Rewrites its prompt live.
-3. **Run 2:** Baymax guides more smoothly and safely. Arize shows the before/after prompt diff.
+3. **Run 2:** Baymax guides more smoothly and safely. The dashboard shows the before/after prompt diff.
 4. **Reflex demo:** A sudden hazard (someone steps in) → Baymax STOPS in ~90ms via the Spine reflex path.
 5. **Punchline:** *"This is what it looks like when a robot has a nervous system — not a script."*
 
@@ -97,7 +97,7 @@ This is the arc we're presenting to judges:
 |-------|-----|--------|------------|
 | Physical AI Hack | UFB | $3,000 | End-to-end Booster K1 control, dual-person use case, production-grade architecture |
 | Multi-agent collaboration | Band | $1,000 | 6+ agents coordinating through Band, two distinct comms patterns |
-| Observability improves the app | Arize | $1,000 | fMRI demo + neuroplasticity before/after, evaluator prompt |
+| Observability improves the app | Observability | $1,000 | fMRI demo + neuroplasticity before/after, evaluator prompt |
 | Science/Engineering | Ddoski's Lab | $5,000 | Reflex Arc + dual-person guidance = novel engineering + social impact |
 
 **Total we're targeting: $10,000**
@@ -111,7 +111,7 @@ See `roles.md` for the full breakdown. Short version:
 - **Eshwar** — Agent Architecture & Band: Conductor, UpperLeft, UpperRight, Lower, Threat, Spine agents; Reflex Arc; Neuroplasticity loop
 - **Advaita** — Nebius & Vision Agent: Nebius compute platform + Vision Agent (with LEFT/RIGHT scene split)
 - **Adil** — LiveKit & Robot I/O: LiveKit room/streaming, the return path (Conductor command → LiveKit → robot), webcam fallback sim; leads the UFB booth
-- **Matthew** — Observability, Safety & Demo: Arize Phoenix, Safety Agent, evaluator prompt, demo dashboard
+- **Matthew** — Observability, Safety & Demo: observability, Safety Agent, evaluator prompt, demo dashboard
 
 ---
 
@@ -120,7 +120,7 @@ See `roles.md` for the full breakdown. Short version:
 1. Read `project_context.md` — full technical detail on every agent, every decision path, the full build order
 2. Read `roles.md` — find your deliverables and the hour-by-hour schedule
 3. Read your `*_READ_THIS.md` file if one exists for you
-4. Set up your environment: Python 3.11+, `langchain-google-genai`, `langgraph`, `band`, `arize-phoenix`, LiveKit Python SDK
+4. Set up your environment: Python 3.11+, `langchain-google-genai`, `langgraph`, `band`, `<your observability tool>`, LiveKit Python SDK
 5. **Set up Nebius first** — required compute platform for UFB ($150 free compute/team via UFB Slack). Nothing else runs without it.
 6. Don't start coding until you've talked to the team — the Band room and LiveKit stream need to be up first or everyone is blocked
 
@@ -131,7 +131,7 @@ See `roles.md` for the full breakdown. Short version:
 - **One job per agent.** Do not combine responsibilities. Short, focused system prompts.
 - **External agents on Band** — agents run in our code, register with Band via `agent name` + `API key`. They don't live on Band.
 - **Framework: LangGraph + Gemini** — `LangGraphAdapter` + `ChatGoogleGenerativeAI`. Eshwar decided, everyone follows.
-- **Arize is local, no API key** — `pip install arize-phoenix` and run it locally.
+- **the observability layer is local, no API key** — `pip install <your observability tool>` and run it locally.
 - **Band room: `baymax-coordination`** — all agents join this one room.
 - **Hardware fallback:** if the Booster K1 isn't available, we use a webcam sim worn by a teammate. Do not block on hardware.
 - **No pre-built code** — hackathon rule, everything written June 20–21.

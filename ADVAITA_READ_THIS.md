@@ -142,7 +142,7 @@ Save your API Key (shown once) and UUID. Give them to Eshwar for `agent_config.y
 
 - How Conductor or Threat interpret your output — that's Eshwar
 - The LiveKit room setup — that's Adil (coordinate with him on frame format)
-- Arize logging — Matthew handles that, your calls will be traced automatically
+- observability logging — Matthew handles that, your calls will be traced automatically
 - Any robot commands — you only describe, never command
 
 ---

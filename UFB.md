@@ -133,5 +133,5 @@ Key talking points at the booth:
 - Real-time closed loop: observation → agents → command → robot → repeat
 - Hierarchical architecture with synchronous decision-making (no desync)
 - Emergency reflex path bypasses decision stack for safety (~90ms)
-- Robot visibly improves between runs (neuroplasticity via Arize)
+- Robot visibly improves between runs (neuroplasticity via the observability layer)
 - Social impact: assistive robot for blind people

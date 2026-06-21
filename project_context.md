@@ -6,7 +6,7 @@
 ---
 
 ## The Idea (One Sentence)
-A humanoid guide robot that assists **two blind people simultaneously** — one on each side — powered by a nervous system of AI agents: one synchronous conductor brain that makes decisions, independent left/right arm agents that each focus on their person, tactical agents that coordinate with each other to execute safely, and Arize making every decision visible like an fMRI of the robot's mind.
+A humanoid guide robot that assists **two blind people simultaneously** — one on each side — powered by a nervous system of AI agents: one synchronous conductor brain that makes decisions, independent left/right arm agents that each focus on their person, tactical agents that coordinate with each other to execute safely, and the observability layer making every decision visible like an fMRI of the robot's mind.
 
 ---
 
@@ -31,7 +31,7 @@ The flagship demo: **guiding two blindfolded people along a route** — detectin
 1. **Dual-person guidance** — one robot, two blind people, two independent arm agents. Each arm has its own agent focused on one person's safety.
 2. **Hierarchical latency design** — synchronous conductor prevents desync; parallel tactical agents maximize execution speed
 3. **Peer tactical coordination** — tactical agents talk to each other through Band, not just up to the conductor. They resolve physical conflicts before acting.
-4. **Neuroplasticity** — Arize traces every decision. Between runs, the Conductor reads traces, identifies failures, rewrites tactical agent prompts. The robot visibly improves run over run.
+4. **Neuroplasticity** — the observability layer traces every decision. Between runs, the Conductor reads traces, identifies failures, rewrites tactical agent prompts. The robot visibly improves run over run.
 
 ---
 
@@ -39,9 +39,9 @@ The flagship demo: **guiding two blindfolded people along a route** — detectin
 > *"The human nervous system doesn't send one giant command to the whole body. Your brain makes a decision — synchronously, one at a time — then your limbs negotiate how to carry it out. We built that architecture. And we pushed it further: Baymax guides two blind people simultaneously, one on each side. The left arm agent focuses entirely on the person to its left. The right arm agent focuses entirely on the person to its right. They can send different signals at the same time. That's not possible with a single monolithic AI. It requires a nervous system."*
 
 **Demo arc:**
-- **Run 1:** Baymax guides two blindfolded people along a route with baseline agent prompts — hesitant, jerky, over-cautious. Arize dashboard runs live beside the walk; judges watch every agent decision light up like brain regions firing.
-- **Between runs:** Conductor reads Arize traces, identifies failures (e.g. Lower stopped too abruptly, UpperLeft hesitated on turn signal), rewrites agent prompts live (neuroplasticity).
-- **Run 2:** Baymax guides more smoothly and safely. Arize shows the before/after prompt diff.
+- **Run 1:** Baymax guides two blindfolded people along a route with baseline agent prompts — hesitant, jerky, over-cautious. The observability dashboard runs live beside the walk; judges watch every agent decision light up like brain regions firing.
+- **Between runs:** Conductor reads the decision traces, identifies failures (e.g. Lower stopped too abruptly, UpperLeft hesitated on turn signal), rewrites agent prompts live (neuroplasticity).
+- **Run 2:** Baymax guides more smoothly and safely. The dashboard shows the before/after prompt diff.
 - **Reflex demo:** a sudden hazard appears → Baymax STOPS in ~90ms via the reflex path, bypassing the Conductor entirely.
 - **Closing line:** *"This is what it looks like when a robot has a nervous system — not a script."*
 
@@ -72,13 +72,13 @@ The flagship demo: **guiding two blindfolded people along a route** — detectin
 - 6 agents registered: Conductor, UpperLeft, UpperRight, Lower, Threat, Spine (+ Safety by Matthew = 7 total)
 - **One job per agent.** Short, focused prompts. Do not combine responsibilities.
 
-### 4. Arize Phoenix (Observability — "The fMRI")
+### 4. Observability — "The fMRI"
 - Prize track: **Observability improves the app — $1,000**
-- Open source, runs locally, **no API key needed** (`pip install arize-phoenix`)
+- Open source, runs locally, **no API key needed** (`pip install <your observability tool>`)
 - Frames as the fMRI of the robot's brain — judges watch agent decisions light up in real time alongside the walk
 - Traces every agent call: prompt in, output, latency, decision path (cortical vs reflex), peer coordination messages
-- **Neuroplasticity loop:** between runs, Conductor reads Arize traces → identifies underperforming agents → rewrites their system prompts → measurable improvement next run
-- Arize prize checklist:
+- **Neuroplasticity loop:** between runs, Conductor reads the decision traces → identifies underperforming agents → rewrites their system prompts → measurable improvement next run
+- Observability prize checklist:
   1. Tracing on for every agent call
   2. Dashboard visible during demo
   3. Evaluator prompt built (did this decision keep the person safe and on course?)
@@ -145,7 +145,7 @@ The flagship demo: **guiding two blindfolded people along a route** — detectin
                      │
              LiveKit → Robot executes
                      │
-              Arize Phoenix (traces everything)
+              the observability layer (traces everything)
 ```
 
 ### Two Decision Paths
@@ -157,7 +157,7 @@ Used for: route planning, turns, walking pace, curb/crosswalk decisions, per-per
 **Reflex Arc (fast, ~90ms):**
 Threat Agent detects critical hazard → Spine → HALT to UpperLeft + UpperRight + Lower, **bypassing Conductor**
 Used for: emergency stop, sudden obstacle or vehicle avoidance
-Arize logs which path was taken for every decision.
+The observability layer logs which path was taken for every decision.
 
 ### Agent Roles
 
@@ -170,17 +170,17 @@ Arize logs which path was taken for every decision.
 | **Lower** | Cerebellum | `@eshwar.rajasekar/lower` | Manages walking pace, stops at curbs/stairs, adjusts for terrain |
 | **Spine** | Spinal Cord | `@eshwar.rajasekar/spine` | Fast-path reflex coordinator — receives CRITICAL threat, immediately HALTs UpperLeft/UpperRight/Lower |
 | **Threat** | Amygdala | `@eshwar.rajasekar/threat` | Detects sudden hazards; fires Reflex Arc if CRITICAL |
-| **Safety** | Brainstem | (Matthew's) | Vetoes unsafe commands, fires emergency STOP, logs to Arize |
+| **Safety** | Brainstem | (Matthew's) | Vetoes unsafe commands, fires emergency STOP, logs to the observability layer |
 
 ### Neuroplasticity Loop (between runs)
 ```
 Run ends
-  → Arize has full trace of every agent decision + outcome
-  → Conductor reads traces via Arize API
+  → the observability layer has a full trace of every agent decision + outcome
+  → Conductor reads traces via the observability API
   → Identifies: which decisions caused hesitation / abrupt stops / unsafe steps
   → Rewrites underperforming agent system prompts with corrected guidance strategy
   → Next run begins with updated "brain"
-  → Arize shows before/after prompt diff
+  → the dashboard shows before/after prompt diff
 ```
 
 ### Full Data Flow
@@ -193,7 +193,7 @@ Run ends
 6. UpperLeft ↔ UpperRight ↔ Lower: peer negotiation via Band (resolve physical conflicts)
 7. Safety Agent reviews coordinated plan, vetoes if unsafe
 8. Conductor synthesizes approved plan → final command → LiveKit → Robot guides both people
-9. All steps → Arize Phoenix (traced)
+9. All steps → the observability layer (traced)
 
 Reflex Arc (bypasses Conductor):
 3b. Threat → Spine → @UpperLeft @UpperRight @Lower [HALT] (~90ms)
@@ -202,7 +202,7 @@ Reflex Arc (bypasses Conductor):
 
 ---
 
-## Observability (Arize Phoenix)
+## Observability
 
 Every agent call instrumented:
 - **Prompt in** — full system prompt + context
@@ -224,13 +224,13 @@ Follow strictly. Do not skip ahead.
 1. **Nebius Physical Workbench** — required compute for UFB. Set up first, claim $150 credit via UFB Slack.
 2. **LiveKit room** — connect to robot camera/depth stream (or webcam/sim fallback). Verify frames flowing.
 3. **Vision Agent + Conductor in Band** — two agents passing messages. Minimum viable loop, unblocks everyone.
-4. **Arize tracing** — instrument both agents. Verify traces appear in local dashboard.
+4. **decision tracing** — instrument both agents. Verify traces appear in local dashboard.
 5. **UpperLeft + UpperRight + Lower agents** — add tactical agents responding to Conductor tasks in parallel.
 6. **Peer coordination** — wire UpperLeft ↔ UpperRight ↔ Lower to negotiate via Band before executing.
 7. **Threat Agent + Spine + Safety Agent** — hazard detection, fast reflex coordinator, veto/STOP logic.
 8. **Reflex Arc** — wire Threat → Spine → joint agents, bypassing Conductor. Measure latency difference.
-9. **Neuroplasticity loop** — Conductor reads Arize traces, rewrites agent prompts. One visible before/after.
-10. **Demo dashboard** — Arize traces + robot feed side by side.
+9. **Neuroplasticity loop** — Conductor reads the decision traces, rewrites agent prompts. One visible before/after.
+10. **Demo dashboard** — the decision traces + robot feed side by side.
 
 ---
 
@@ -240,7 +240,7 @@ Follow strictly. Do not skip ahead.
 |-------|---------|--------|------------|
 | Physical AI Hack | UFB | $3,000 | End-to-end assistive robot control on Booster K1, production-grade hierarchical architecture, dual-person use case |
 | Multi-agent collaboration | Band | $1,000 | 6+ agents, two distinct comms patterns (top-down + peer), all external agents |
-| Observability improves the app | Arize | $1,000 | Live fMRI dashboard + neuroplasticity before/after, evaluator on dual-person safety |
+| Observability improves the app | Observability | $1,000 | Live fMRI dashboard + neuroplasticity before/after, evaluator on dual-person safety |
 | Science/Engineering | Ddoski's Lab | $5,000 | Novel hierarchical latency design + dual-person guidance + social impact framing |
 
 **Total potential: $10,000**
@@ -254,7 +254,7 @@ Follow strictly. Do not skip ahead.
 | **Eshwar** | Agent Architecture & Band (The Brain) | Conductor, UpperLeft, UpperRight, Lower, Threat, Spine agents; Reflex Arc; Neuroplasticity loop |
 | **Advaita** | Nebius & Vision Agent (The Eyes) | Nebius compute platform setup; Vision Agent perception (with left/right scene split) |
 | **Adil** | LiveKit & Robot I/O (The Body) | LiveKit room/streaming; Conductor command → LiveKit → robot return path; webcam fallback sim; UFB booth lead |
-| **Matthew** | Observability, Safety & Demo (The Reflexes & fMRI) | Arize Phoenix; Safety Agent; evaluator prompt; demo dashboard; Arize booth lead |
+| **Matthew** | Observability, Safety & Demo (The Reflexes & fMRI) | Observability; Safety Agent; evaluator prompt; demo dashboard; the observability sponsor booth lead |
 
 See `roles.md` for full responsibilities, deliverables, and hour-by-hour build order.
 
@@ -268,7 +268,7 @@ See `roles.md` for full responsibilities, deliverables, and hour-by-hour build o
 | `langchain-google-genai` | `gemini-2.0-flash` for all agents |
 | `langgraph` | Agent framework — `LangGraphAdapter` for Band integration |
 | Band SDK (`band`) | Multi-agent communication — external agents, `LangGraphAdapter` |
-| Arize Phoenix | `pip install arize-phoenix` — local, no API key |
+| Observability | `pip install <your observability tool>` — local, no API key |
 | LiveKit Python SDK | Sensor stream in, motor commands out |
 | Nebius Physical Workbench | UFB's required compute platform — set up before anything else |
 | Booster K1 | Target hardware robot (UFB on-site) |
@@ -312,7 +312,7 @@ asyncio.run(run_with_graceful_shutdown(agent))
   "scene": "string — from Vision Agent via Band (includes left/right obstacle breakdown)",
   "last_action": "string — what was last sent to robot",
   "user_state": "WALKING | STOPPED | TURNING",
-  "arize_feedback": "string — optional, injected between runs for neuroplasticity"
+  "observability_feedback": "string — optional, injected between runs for neuroplasticity"
 }
 ```
 ### Conductor Agent — Output
@@ -394,5 +394,5 @@ Waiting on:
 - [ ] Vision Agent registered in Band (Advaita)
 - [ ] Safety Agent registered in Band (Matthew)
 - [ ] LiveKit setup (Adil)
-- [ ] Arize Phoenix integration (Matthew)
+- [ ] the observability layer integration (Matthew)
 - [ ] UFB robot API / simulator details

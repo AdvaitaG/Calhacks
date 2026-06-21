@@ -8,7 +8,7 @@
 **Own the intelligence layer. Everything that happens inside the Band room.**
 
 ### Agents (all 6 already registered in Band)
-- **Conductor** (Prefrontal Cortex) — plans safe navigation route, dispatches tasks to UpperLeft/UpperRight/Lower, reads Arize traces between sessions for neuroplasticity
+- **Conductor** (Prefrontal Cortex) — plans safe navigation route, dispatches tasks to UpperLeft/UpperRight/Lower, reads the decision traces between sessions for neuroplasticity
 - **UpperLeft** (Motor Cortex — Left) — controls the LEFT guiding arm; responsible for the blind person on the left side
 - **UpperRight** (Motor Cortex — Right) — controls the RIGHT guiding arm; responsible for the blind person on the right side
 - **Lower** (Cerebellum) — manages walking pace, stops at curbs/stairs, adjusts for terrain
@@ -20,19 +20,19 @@
 - Framework decided: **LangGraph + LangChain** (`LangGraphAdapter` + `ChatGoogleGenerativeAI`) — Gemini, not Claude
 - Wire UpperLeft + UpperRight + Lower to run in parallel (they don't wait on each other)
 - Implement the **Reflex Arc**: Threat → Spine → joint agents, bypassing Conductor (~90ms)
-- Implement the **Neuroplasticity loop**: Conductor reads Arize traces after each session, rewrites underperforming agent prompts, produces visible before/after diff
+- Implement the **Neuroplasticity loop**: Conductor reads the decision traces after each session, rewrites underperforming agent prompts, produces visible before/after diff
 
 ### Deliverables
 - [x] All 6 agents registered in Band (API keys + UUIDs in .env)
 - [ ] Band room `baymax-coordination` created with all agents
 - [ ] UpperLeft + UpperRight + Lower agents responding in parallel to Conductor tasks
 - [ ] Threat → Spine → Reflex Arc wired — latency measurably faster than cortical path
-- [ ] Neuroplasticity loop: one visible prompt rewrite driven by Arize traces
+- [ ] Neuroplasticity loop: one visible prompt rewrite driven by the decision traces
 
 ### Stack
 - Band SDK (`band`) + `LangGraphAdapter`
 - `langchain-google-genai` — Gemini (`gemini-2.0-flash`, `temperature=0.1`)
-- Arize trace API (read side — for neuroplasticity loop)
+- decision trace API (read side — for neuroplasticity loop)
 
 ---
 
@@ -93,26 +93,26 @@
 **Own the layer that makes Baymax trustworthy and demoable.**
 
 ### Agents
-- **Safety Agent** (Brainstem) — monitors all agent outputs via Band, vetoes any unsafe navigation command instantly, fires the stop signal on the reflex arc, logs every veto to Arize with reason
+- **Safety Agent** (Brainstem) — monitors all agent outputs via Band, vetoes any unsafe navigation command instantly, fires the stop signal on the reflex arc, logs every veto to the observability layer with reason
 
 ### Responsibilities
-- Set up **Arize Phoenix** locally and instrument every agent call (prompt in, output, latency, decision path — cortical vs reflex)
+- Set up **the observability layer** locally and instrument every agent call (prompt in, output, latency, decision path — cortical vs reflex)
 - Write the Safety Agent: subscribes to all Band room outputs, vetoes bad commands, stops the person if danger confirmed
-- Build the **Arize evaluator prompt**: LLM judge that scores whether each navigation decision kept the person safe and moving
-- Drive the Arize prize checklist: tracing on → traces reviewed → evaluator built → improvement visible → tell them at their booth
-- Build the **frontend demo dashboard**: Arize traces + robot camera feed side by side, cortical vs reflex path labeled in real time
-- Own the Arize booth visit
+- Build the **observability evaluator prompt**: LLM judge that scores whether each navigation decision kept the person safe and moving
+- Drive the observability prize checklist: tracing on → traces reviewed → evaluator built → improvement visible → tell them at their booth
+- Build the **frontend demo dashboard**: the decision traces + robot camera feed side by side, cortical vs reflex path labeled in real time
+- Own the observability sponsor booth visit
 
 ### Deliverables
-- [ ] Arize Phoenix running locally with all agent calls traced
+- [ ] the observability layer running locally with all agent calls traced
 - [ ] Safety Agent with veto and stop logic live in Band room
 - [ ] Evaluator prompt producing scores per navigation decision
 - [ ] One visible before/after: eval feedback → prompt improvement → smoother navigation
 - [ ] Demo dashboard: live agent traces + robot camera feed, paths labeled
-- [ ] Arize booth demo ready
+- [ ] the observability sponsor booth demo ready
 
 ### Stack
-- Arize Phoenix (`pip install arize-phoenix`) — local, no API key
+- the observability layer (`pip install <your observability tool>`) — local, no API key
 - Band SDK (Safety Agent subscribes to all outputs)
 - `langchain-google-genai` — Gemini (`gemini-2.0-flash`) for Safety Agent + evaluator
 - Frontend: Streamlit or simple HTML/JS for dashboard
@@ -130,7 +130,7 @@
 | End-to-end integration test | All four together |
 | UFB booth | Adil leads |
 | Band booth | Eshwar leads |
-| Arize booth | Matthew leads |
+| the observability sponsor booth | Matthew leads |
 | Ddoski's Lab pitch | All four — emphasize reflex arc, social impact, novel architecture |
 
 ---
@@ -142,13 +142,13 @@ Hour 1–2
   Advaita  → Nebius up, UFB compute claimed
   Adil     → LiveKit room up, webcam sim running, frames flowing
   Eshwar   → Band room up, framework chosen, Vision + Conductor loop
-  Matthew  → Arize Phoenix running locally, first agent instrumented
+  Matthew  → the observability layer running locally, first agent instrumented
 
 Hour 3–4
   Advaita  → Vision Agent consuming LiveKit frames, posting to Band room
   Adil     → Return path scaffolded: Conductor command → LiveKit → sim
   Eshwar   → Upper + Lower Body agents responding in parallel
-  Matthew  → All agent calls traced in Arize dashboard
+  Matthew  → All agent calls traced in the observability dashboard
 
 Hour 5–6
   Adil     → Return path fully working: robot/sim guiding person

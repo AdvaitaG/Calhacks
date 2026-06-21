@@ -155,7 +155,7 @@ All messages flow through this one room. @mentions control who processes what.
 
 5. Conductor is notified AFTER the fact:
    → Safety sends: "@Conductor [REFLEX_EXECUTED]: {reason: ..., timestamp: ...}"
-   → Conductor logs to Arize, waits for next scene
+   → Conductor logs to the observability layer, waits for next scene
 ```
 
 ---
@@ -380,7 +380,7 @@ All 6 connect to Band, appear online, and wait for @mentions. Advaita's Vision A
 - [ ] Threat: @mention with safe scene → verify sends LOW/NONE to Conductor only
 - [ ] Full cortical path: Vision → Conductor → UpperLeft+UpperRight+Lower → Safety → approved
 - [ ] Full reflex path: Vision (hazard) → Threat → Spine → joint agents (bypasses Conductor)
-- [ ] Arize dashboard shows traces for all of the above
+- [ ] the observability dashboard shows traces for all of the above
 
 ---
 
