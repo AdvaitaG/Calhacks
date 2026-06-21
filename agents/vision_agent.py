@@ -29,6 +29,7 @@ from agents.shared.config import WS_URL, REST_URL
 GEMINI_API_KEY   = os.environ["GEMINI_API_KEY"]
 VISION_AGENT_ID  = os.environ["VisionID"]
 VISION_API_KEY   = os.environ["VisionBandAPI"]
+VISION_HANDLE    = os.environ.get("VisionHandle", "@eshwar.rajasekar/vision")
 
 LIVEKIT_URL        = os.environ.get("LIVEKIT_URL", "")
 LIVEKIT_TOKEN      = os.environ.get("LIVEKIT_TOKEN", "")
@@ -167,7 +168,7 @@ async def _publish_scene(tools: AgentTools, jpeg_bytes: bytes) -> None:
         t0 = time.monotonic()
         scene = await loop.run_in_executor(None, describe_frame, jpeg_bytes)
         scene["latency_ms"] = round((time.monotonic() - t0) * 1000)
-        scene["agent"] = "vision"
+        scene["agent"] = VISION_HANDLE
 
         content = f"[SCENE] {json.dumps(scene)}"
         print(f"[Vision] {scene.get('scene_summary', '?')} | "
@@ -239,7 +240,7 @@ async def main() -> None:
 
     await link.connect()
     await link.subscribe_agent_rooms(VISION_AGENT_ID)
-    print("[Vision] Connected to Band — waiting for room...")
+    print(f"[Vision] Online as {VISION_HANDLE} — waiting for room...")
 
     tools: AgentTools | None = None
     vision_task: asyncio.Task | None = None
