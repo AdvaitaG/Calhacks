@@ -176,9 +176,11 @@ async def _publish_scene(tools: AgentTools, jpeg_bytes: bytes) -> None:
               f"hazard={scene.get('hazard_level')} | "
               f"{scene['latency_ms']}ms")
 
-        # Broadcast to room — LangGraphAdapter agents respond to all messages.
-        # Conductor and Threat instructions filter on [SCENE] tag.
-        await tools.send_message(content)
+        # Tag conductor + threat so both process the scene in parallel
+        await tools.send_message(
+            content,
+            mentions=[CONDUCTOR_HANDLE, THREAT_HANDLE],
+        )
         print("[Vision] Scene posted to Band")
     except Exception as e:
         import traceback
@@ -250,7 +252,17 @@ async def main() -> None:
         if vision_task is not None:
             return
         print(f"[Vision] Starting vision loop for room {room_id}")
-        tools = AgentTools(room_id=room_id, rest=link.rest)
+        try:
+            resp = await link.rest.agent_api_participants.list_agent_chat_participants(
+                chat_id=room_id,
+                request_options=DEFAULT_REQUEST_OPTIONS,
+            )
+            participants = [p.model_dump(exclude_none=True) for p in (resp.data or [])]
+            print(f"[Vision] {len(participants)} participants: {[p.get('handle') for p in participants]}")
+        except Exception as e:
+            print(f"[Vision] Could not fetch participants: {e}")
+            participants = []
+        tools = AgentTools(room_id=room_id, rest=link.rest, participants=participants)
         vision_task = asyncio.create_task(_vision_loop(tools))
 
     # Check for rooms the agent is already in
