@@ -243,30 +243,48 @@ async def main() -> None:
     )
 
     await link.connect()
-    await link.subscribe_agent_rooms(VISION_AGENT_ID)
-    print(f"[Vision] Online as {VISION_HANDLE} — waiting for room...")
+    print(f"[Vision] Online as {VISION_HANDLE} — fetching existing rooms...")
 
-    tools: AgentTools | None = None
     vision_task: asyncio.Task | None = None
+
+    async def _start_vision_for_room(room_id: str) -> None:
+        nonlocal vision_task
+        if vision_task is not None:
+            return
+        print(f"[Vision] Starting vision loop for room {room_id}")
+        try:
+            resp = await link.rest.agent_api_participants.list_agent_participants(
+                chat_id=room_id,
+                request_options=DEFAULT_REQUEST_OPTIONS,
+            )
+            participants = [p.model_dump(exclude_none=True) for p in (resp.data or [])]
+            print(f"[Vision] {len(participants)} participants found")
+        except Exception as e:
+            print(f"[Vision] Could not fetch participants: {e} — sending without mentions")
+            participants = None
+        tools = AgentTools(room_id=room_id, rest=link.rest, participants=participants)
+        vision_task = asyncio.create_task(_vision_loop(tools))
+
+    # Check for rooms the agent is already in
+    try:
+        resp = await link.rest.agent_api_chats.list_agent_chats(
+            request_options=DEFAULT_REQUEST_OPTIONS,
+        )
+        existing_rooms = resp.data or []
+        if existing_rooms:
+            room_id = existing_rooms[0].id
+            print(f"[Vision] Found existing room {room_id}")
+            await _start_vision_for_room(room_id)
+        else:
+            print("[Vision] No existing rooms — waiting for room invite...")
+    except Exception as e:
+        print(f"[Vision] Could not list rooms: {e} — waiting for room event...")
+
+    await link.subscribe_agent_rooms(VISION_AGENT_ID)
 
     async for event in link:
         if isinstance(event, RoomAddedEvent):
-            room_id = event.room_id
-            print(f"[Vision] Joined room {room_id} — fetching participants...")
-            try:
-                resp = await link.rest.agent_api_participants.list_agent_participants(
-                    chat_id=room_id,
-                    request_options=DEFAULT_REQUEST_OPTIONS,
-                )
-                participants = [p.model_dump(exclude_none=True) for p in (resp.data or [])]
-                print(f"[Vision] {len(participants)} participants in room")
-            except Exception as e:
-                print(f"[Vision] Could not fetch participants: {e} — sending without mentions")
-                participants = None
-
-            tools = AgentTools(room_id=room_id, rest=link.rest, participants=participants)
-            if vision_task is None:
-                vision_task = asyncio.create_task(_vision_loop(tools))
+            await _start_vision_for_room(event.room_id)
 
         # Vision agent doesn't respond to messages — it only publishes.
 
