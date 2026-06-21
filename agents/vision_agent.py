@@ -42,7 +42,7 @@ LIVEKIT_ROOM       = os.environ.get("LIVEKIT_ROOM", "baymax-robot")
 
 # Minimum seconds between scene publications. Gemini call is the bottleneck
 # (~5-9s) so this only throttles if it ever gets faster.
-FRAME_INTERVAL_SECONDS = 1.0
+FRAME_INTERVAL_SECONDS = 2.0
 
 # --- Gemini vision -------------------------------------------------------- #
 
