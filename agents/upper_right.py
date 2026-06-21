@@ -50,7 +50,7 @@ If you receive [HALT] from {_H['spine']}:
 Respond ONLY with valid JSON. No explanation outside the JSON.
 
 Schema:
-{"arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "free_arm_action": "SWEEP|MIRROR|BARRIER|HALT_EXTEND", "side": "RIGHT", "ready": true, "conflict": null}
+{{"arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "free_arm_action": "SWEEP|MIRROR|BARRIER|HALT_EXTEND", "side": "RIGHT", "ready": true, "conflict": null}}
 """
 
 async def main():

@@ -42,7 +42,7 @@ Timeout rule: if no PEER_CHECK arrives within 2 exchanges, proceed with your pla
 Respond ONLY with valid JSON. No explanation outside the JSON.
 
 Schema:
-{"gait_action": "WALK_NORMAL|WALK_SLOW|PAUSE|STEP_HIGH|STEP_DOWN|HALT", "pace_ms": 500, "ready": true, "conflict": null}
+{{"gait_action": "WALK_NORMAL|WALK_SLOW|PAUSE|STEP_HIGH|STEP_DOWN|HALT", "pace_ms": 500, "ready": true, "conflict": null}}
 """
 
 async def main():

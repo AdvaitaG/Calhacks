@@ -41,7 +41,7 @@ You do not act on any other message type.
 Respond ONLY with valid JSON. No explanation outside the JSON.
 
 Schema:
-{"command": "HALT", "targets": ["UpperLeft", "UpperRight", "Lower"], "timestamp": 0}
+{{"command": "HALT", "targets": ["UpperLeft", "UpperRight", "Lower"], "timestamp": 0}}
 """
 
 async def main():

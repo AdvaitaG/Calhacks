@@ -36,7 +36,7 @@ You run in parallel with Conductor — both receive [SCENE] at the same time.
 Respond ONLY with valid JSON. No explanation outside the JSON.
 
 Schema:
-{"threat_level": "NONE|LOW|HIGH|CRITICAL", "threat_type": "VEHICLE|OBSTACLE|DROP|PERSON|null", "fire_reflex": false, "reflex_command": "EMERGENCY_STOP|null"}
+{{"threat_level": "NONE|LOW|HIGH|CRITICAL", "threat_type": "VEHICLE|OBSTACLE|DROP|PERSON|null", "fire_reflex": false, "reflex_command": "EMERGENCY_STOP|null"}}
 """
 
 async def main():
