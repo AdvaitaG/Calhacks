@@ -18,7 +18,34 @@ from livekit import rtc
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 
 LIVEKIT_URL = os.environ.get("LIVEKIT_URL", "")
+# Auth: prefer a pre-minted token if given, else mint one from the API
+# key/secret scoped to LIVEKIT_ROOM. This MUST be the same room Adil's
+# robot.py publishes to (default: baymax-robot) or the camera track won't
+# be visible here.
 LIVEKIT_TOKEN = os.environ.get("LIVEKIT_TOKEN", "")
+LIVEKIT_API_KEY = os.environ.get("LIVEKIT_API_KEY", "")
+LIVEKIT_API_SECRET = os.environ.get("LIVEKIT_API_SECRET", "")
+LIVEKIT_ROOM = os.environ.get("LIVEKIT_ROOM", "baymax-robot")
+
+
+def _resolve_livekit_token() -> str:
+    """Use a provided token, otherwise mint one (identity 'vision') from key/secret."""
+    if LIVEKIT_TOKEN:
+        return LIVEKIT_TOKEN
+    if LIVEKIT_API_KEY and LIVEKIT_API_SECRET:
+        from datetime import timedelta
+        from livekit import api
+        return (
+            api.AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
+            .with_identity("vision")
+            .with_name("vision")
+            .with_grants(
+                api.VideoGrants(room_join=True, room=LIVEKIT_ROOM, can_subscribe=True)
+            )
+            .with_ttl(timedelta(hours=6))
+            .to_jwt()
+        )
+    return ""
 
 FRAME_INTERVAL_SECONDS = 1.0  # describe the scene once per second
 
@@ -120,10 +147,12 @@ class VisionAgent:
         self.band_room = band_room
 
     async def run(self) -> None:
-        if not LIVEKIT_URL or not LIVEKIT_TOKEN:
+        token = _resolve_livekit_token()
+        if not LIVEKIT_URL or not token:
             raise RuntimeError(
-                "LIVEKIT_URL and LIVEKIT_TOKEN must be set. "
-                "Get them from Adil once his LiveKit room is up."
+                "Set LIVEKIT_URL and either LIVEKIT_TOKEN or "
+                "LIVEKIT_API_KEY + LIVEKIT_API_SECRET (room = LIVEKIT_ROOM, "
+                f"currently {LIVEKIT_ROOM!r}). Coordinate the room name with Adil."
             )
 
         room = rtc.Room()
@@ -133,7 +162,7 @@ class VisionAgent:
             if track.kind == rtc.TrackKind.KIND_VIDEO:
                 asyncio.ensure_future(self._consume_video(track))
 
-        await room.connect(LIVEKIT_URL, LIVEKIT_TOKEN)
+        await room.connect(LIVEKIT_URL, token)
         print(f"[VisionAgent] Connected to LiveKit: {room.name}")
 
         try:
