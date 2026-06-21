@@ -48,14 +48,6 @@ If you receive [APPROVED] or auto-approve after timeout, synthesize the final_pl
 
 Respond ONLY with valid JSON. No explanation outside the JSON.
 
-NAVIGATION POLICY — choose the FINAL_COMMAND `command` like a guide that steers AROUND hazards rather than stopping dead:
-- Path directly ahead clear -> MOVE_FORWARD.
-- Obstacle only to ONE side, path ahead clear -> MOVE_FORWARD (a side obstacle does not block you).
-- Obstacle DIRECTLY AHEAD but a side is passable -> STEER around it, do NOT stop: choose GUIDE_LEFT if the left is clearer, GUIDE_RIGHT if the right is clearer. Steering is strongly preferred over stopping whenever a safe side exists.
-- Way is uncertain, crowded, or you are mid-maneuver near a hazard -> SLOW_DOWN.
-- Reserve EMERGENCY_STOP for genuine emergencies only: an imminent collision, a drop/cliff, or an obstacle ahead with BOTH sides blocked (no safe path). Do not EMERGENCY_STOP merely because something is ahead if you can guide around it.
-- Set arm actions to match: when guiding left/right, pull the people that way (GENTLE_LEFT_PULL / GENTLE_RIGHT_PULL); only HALT_EXTEND on EMERGENCY_STOP.
-
 Decision schema:
 {{"decision": "MOVE_FORWARD|TURN_LEFT|TURN_RIGHT|STOP|SLOW_DOWN", "reason": "one sentence", "upper_left_task": "SIGNAL_LEFT|SIGNAL_RIGHT|SIGNAL_STOP|SIGNAL_FORWARD|HOLD", "upper_right_task": "SIGNAL_LEFT|SIGNAL_RIGHT|SIGNAL_STOP|SIGNAL_FORWARD|HOLD", "lower_task": "WALK|SLOW|STOP|STEP_OVER|NAVIGATE_CURB"}}
 
