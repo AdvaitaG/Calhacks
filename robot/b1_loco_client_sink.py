@@ -32,8 +32,17 @@ logger = logging.getLogger("b1_sink")
 PREPARE_SECS = float(os.environ.get("BOOSTER_PREPARE_SECS", "6"))
 # Max velocity change per Move() call (~20 Hz). Smooths abrupt command jumps so
 # the gait isn't shocked into a fall. ~0.4 m/s^2 and ~1.0 rad/s^2.
-SLEW_XY = float(os.environ.get("BOOSTER_SLEW_XY", "0.015"))   # gentler accel = steadier gait
-SLEW_YAW = float(os.environ.get("BOOSTER_SLEW_YAW", "0.03"))
+SLEW_XY = float(os.environ.get("BOOSTER_SLEW_XY", "0.045"))   # snappy accel -> hits big strides fast
+SLEW_YAW = float(os.environ.get("BOOSTER_SLEW_YAW", "0.07"))
+
+# A rejected Move (502 / RPC timeout) is usually a transient blip, NOT a fall.
+# Keep commanding through failures for this long before assuming the robot is
+# actually down — this is the "down" sensitivity knob. Higher = less twitchy.
+FALL_GRACE_S = float(os.environ.get("BOOSTER_FALL_GRACE", "2.5"))
+# Don't re-attempt the get-up sequence more often than this.
+RECOVER_COOLDOWN_S = float(os.environ.get("BOOSTER_RECOVER_COOLDOWN", "12"))
+# Set BOOSTER_AUTORECOVER=0 to disable the auto stand-up attempt.
+AUTORECOVER = os.environ.get("BOOSTER_AUTORECOVER", "1") != "0"
 
 
 def _slew(cur: float, tgt: float, step: float) -> float:
@@ -61,6 +70,7 @@ class B1LocoClientSink:
         self._last_arms = None
         self._cur = (0.0, 0.0, 0.0)  # current (slewed) velocity setpoint
         self._last_recover = 0.0     # last fall-recovery attempt (monotonic)
+        self._fail_since = None      # monotonic time the current Move-failure streak began
         self._arms_enabled = bool(os.environ.get("BAYMAX_ARMS"))
 
         #   "127.0.0.1"      -> local sim control runner / Booster Studio
@@ -93,22 +103,53 @@ class B1LocoClientSink:
         self._cur = (cx, cy, cyaw)
         try:
             self.client.Move(cx, cy, cyaw)
+            self._fail_since = None          # a successful Move clears the fall timer
         except Exception as e:  # noqa: BLE001 — never let a rejected Move kill the loop
-            self._recover(e)
+            self._on_move_fail(e)
 
-    def _recover(self, err) -> None:
-        """Move rejected (502 / RPC timeout) = robot not walking-ready, usually
-        FALLEN. In this Webots sim a fall is NOT recoverable from the SDK (GetUp
-        just floods the runner with RPC timeouts and makes it worse) — only a
-        Webots reset stands it back up. So don't fight it: keep the control loop
-        alive and warn at most once / 5 s."""
+    def _on_move_fail(self, err) -> None:
+        """A rejected Move is usually a transient RPC blip, NOT a fall. Tolerate
+        brief failures (keep commanding so the robot walks straight through them);
+        only when motion stays dead past FALL_GRACE_S do we treat it as a real
+        fall and attempt a stand-up. This is the de-twitched 'down' detection."""
         now = time.monotonic()
-        if now - self._last_recover > 5.0:
-            self._last_recover = now
-            logger.warning("[b1] Move rejected (%s) — sim not executing motion. Check: is "
-                           "Webots PLAYING (clock advancing)? is the runner alive? If the "
-                           "robot fell, Simulation->Reset->Play; if it's standing/frozen, "
-                           "press Play or restart the runner.", err)
+        if self._fail_since is None:
+            self._fail_since = now
+            return                            # first blip — ignore, keep walking
+        if now - self._fail_since < FALL_GRACE_S:
+            return                            # still inside the tolerance window
+        if now - self._last_recover < RECOVER_COOLDOWN_S:
+            return                            # recently attempted; let it settle
+        self._last_recover = now
+        if AUTORECOVER:
+            self._self_recover()
+        else:
+            logger.warning("[b1] no motion for %.1fs — robot likely down (auto-recover off).",
+                           now - self._fail_since)
+
+    def _self_recover(self) -> None:
+        """Confirmed fall — stand back up WITHOUT manual intervention. Best-effort
+        damp -> get-up -> prepare -> walk; each step independent so a missing skill
+        doesn't abort the rest. If this sim's RL controller has no get-up, this
+        won't succeed (only a Webots reset would) — but it's safe to try."""
+        RM = self._RobotMode
+        logger.warning("[b1] motion dead >%.1fs — assuming a fall; attempting self-recovery ...",
+                       FALL_GRACE_S)
+        for name, fn, wait in (
+            ("damp",    lambda: self.client.ChangeMode(RM.kDamping), 1.0),
+            ("get-up",  lambda: self.client.GetUp(),                 3.0),
+            ("prepare", lambda: self.client.ChangeMode(RM.kPrepare), PREPARE_SECS),
+            ("walk",    lambda: self.client.ChangeMode(RM.kWalking), 1.5),
+        ):
+            try:
+                fn()
+                time.sleep(wait)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("[b1]   recovery step '%s' not available: %s",
+                               name, str(e).splitlines()[0][:60])
+        self._cur = (0.0, 0.0, 0.0)
+        self._fail_since = None
+        logger.info("[b1] recovery sequence finished — resuming commands")
 
     def damp(self) -> None:
         if not self._damping:

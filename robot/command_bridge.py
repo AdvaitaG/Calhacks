@@ -40,10 +40,10 @@ STOP: Velocity = (0.0, 0.0, 0.0)
 # =0.7 if it tips. Continuous walking (12s hold) keeps these stable.
 SPEED = float(os.environ.get("BAYMAX_SPEED", "1.0"))
 _BASE: dict[str, Velocity] = {
-    "GUIDE_LEFT":     (0.11, 0.0,  0.14),
-    "GUIDE_RIGHT":    (0.11, 0.0, -0.14),
-    "MOVE_FORWARD":   (0.14, 0.0,  0.0),   # steady stride this sim can hold upright
-    "SLOW_DOWN":      (0.09, 0.0,  0.0),
+    "GUIDE_LEFT":     (0.36, 0.0,  0.42),
+    "GUIDE_RIGHT":    (0.36, 0.0, -0.42),
+    "MOVE_FORWARD":   (0.62, 0.0,  0.0),   # max-effort big fast strides; BAYMAX_SPEED=1.25 ~= 2x
+    "SLOW_DOWN":      (0.28, 0.0,  0.0),
     "STOP":           STOP,
     "EMERGENCY_STOP": STOP,
 }
@@ -52,11 +52,12 @@ COMMAND_MAP: dict[str, Velocity] = {
 }
 
 REFLEX_WINDOW_S = 0.20   # if a CORTICAL command lands within this of a REFLEX, REFLEX wins
-# No fresh command for this long -> STOP failsafe. The Conductor's LLM emits a
-# command only every ~10-20s, so a short timeout makes the robot stutter-stop
-# (and the start/stop destabilizes the sim). Hold the last command longer so it
-# walks continuously between decisions. Lower this for real-hardware safety.
-COMMAND_TIMEOUT_S = float(os.environ.get("BAYMAX_CMD_TIMEOUT_S", "12.0"))
+# No fresh command for this long -> STOP failsafe. The Conductor is bursty (LLM
+# latency + Band's flaky 422 mark-processed acks make it go quiet for stretches),
+# so a short timeout freezes the robot mid-demo. Hold the last command much longer
+# so it keeps RUNNING through conductor silences. (Sim demo value; lower this hard
+# for real-hardware safety.)
+COMMAND_TIMEOUT_S = float(os.environ.get("BAYMAX_CMD_TIMEOUT_S", "30.0"))
 TICK_HZ = 20             # control loop rate
 
 
