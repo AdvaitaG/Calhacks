@@ -140,6 +140,7 @@ async def _publish_scene(tools: AgentTools, jpeg_bytes: bytes) -> None:
         scene = await loop.run_in_executor(None, describe_frame, jpeg_bytes)
         scene["latency_ms"] = round((time.monotonic() - t0) * 1000)
         scene["agent"] = VISION_HANDLE
+        scene["timestamp"] = round(time.time() * 1000)
 
         content = f"[SCENE] {json.dumps(scene)}"
         print(f"[Vision] {scene.get('scene_summary', '?')} | "

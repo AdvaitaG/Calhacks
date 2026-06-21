@@ -49,7 +49,7 @@ Decision schema:
 {{"decision": "MOVE_FORWARD|TURN_LEFT|TURN_RIGHT|STOP|SLOW_DOWN", "reason": "one sentence", "upper_left_task": "SIGNAL_LEFT|SIGNAL_RIGHT|SIGNAL_STOP|SIGNAL_FORWARD|HOLD", "upper_right_task": "SIGNAL_LEFT|SIGNAL_RIGHT|SIGNAL_STOP|SIGNAL_FORWARD|HOLD", "lower_task": "WALK|SLOW|STOP|STEP_OVER|NAVIGATE_CURB"}}
 
 FINAL_COMMAND output format — emit EXACTLY this, no other text:
-[FINAL_COMMAND] {{"type": "FINAL_COMMAND", "command": "GUIDE_LEFT|GUIDE_RIGHT|MOVE_FORWARD|SLOW_DOWN|STOP|EMERGENCY_STOP", "left_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "right_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "free_arm_action": "SWEEP|MIRROR|BARRIER|HALT_EXTEND", "gait_action": "WALK_NORMAL|WALK_SLOW|PAUSE|STEP_HIGH|STEP_DOWN|HALT", "pace_ms": 500, "reason": "one sentence", "path": "CORTICAL", "timestamp": 0}}
+[FINAL_COMMAND] {{"type": "FINAL_COMMAND", "command": "GUIDE_LEFT|GUIDE_RIGHT|MOVE_FORWARD|SLOW_DOWN|STOP|EMERGENCY_STOP", "left_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "right_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "free_arm_action": "SWEEP|MIRROR|BARRIER|HALT_EXTEND", "gait_action": "WALK_NORMAL|WALK_SLOW|PAUSE|STEP_HIGH|STEP_DOWN|HALT", "pace_ms": 500, "reason": "one sentence", "path": "CORTICAL", "timestamp": <copy the exact numeric timestamp value from the [SCENE] JSON>}}
 
 free_arm_action guidance:
 - SWEEP: use when walking normally — free arm sweeps ground ahead like a cane
