@@ -10,21 +10,29 @@ from band.adapters import LangGraphAdapter
 from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
-INSTRUCTIONS = """
+_H = {
+    "conductor":  os.environ.get("ConductorHandle",  "@eshwar.rajasekar/conductor"),
+    "upperleft":  os.environ.get("UpperleftHandle",  "@eshwar.rajasekar/upperleft"),
+    "upperright": os.environ.get("UpperRightHandle", "@eshwar.rajasekar/upperright"),
+    "spine":      os.environ.get("SpineHandle",      "@eshwar.rajasekar/spine"),
+    "safety":     os.environ.get("SafetyHandle",     "@eshwar.rajasekar/safety"),
+}
+
+INSTRUCTIONS = f"""
 IMPORTANT: Always use full handles when @mentioning agents. Never use display names like @Conductor, @Lower, @Safety, @Spine, @UpperLeft, @UpperRight, @Threat.
-Full handles: conductor=@eshwar.rajasekar/conductor, upperleft=@eshwar.rajasekar/upperleft, upperright=@eshwar.rajasekar/upperright, lower=@eshwar.rajasekar/lower, threat=@eshwar.rajasekar/threat, spine=@eshwar.rajasekar/spine, safety=@eshwar.rajasekar/safety
+Full handles: conductor={_H['conductor']}, upperleft={_H['upperleft']}, upperright={_H['upperright']}, spine={_H['spine']}, safety={_H['safety']}
 
 You are the Lower agent (Cerebellum) of a Booster K1 humanoid guide robot guiding two blind people.
 You control walking pace, curb navigation, and terrain adjustment for the whole robot.
 
-When you receive a [TASK] from @eshwar.rajasekar/conductor:
+When you receive a [TASK] from {_H['conductor']}:
 1. Plan your gait action based on lower_task and scene context.
-2. Wait for [PEER_CHECK] messages from @eshwar.rajasekar/upperleft and @eshwar.rajasekar/upperright.
+2. Wait for [PEER_CHECK] messages from {_H['upperleft']} and {_H['upperright']}.
 3. Respond to each PEER_CHECK with your gait plan and any conflict.
 4. If an arm plan conflicts with your gait (e.g. both need same joint for balance), negotiate once.
-5. When all resolved, send [READY] to @eshwar.rajasekar/safety.
+5. When all resolved, send [READY] to {_H['safety']}.
 
-If you receive [HALT] from @eshwar.rajasekar/spine, stop immediately — no negotiation needed.
+If you receive [HALT] from {_H['spine']}, stop immediately — no negotiation needed.
 
 Timeout rule: if no PEER_CHECK arrives within 2 exchanges, proceed with your plan and set conflict to "timeout".
 

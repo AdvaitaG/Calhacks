@@ -40,8 +40,8 @@ LIVEKIT_ROOM       = os.environ.get("LIVEKIT_ROOM", "baymax-robot")
 
 FRAME_INTERVAL_SECONDS = 1.0
 
-CONDUCTOR_HANDLE = "@eshwar.rajasekar/conductor"
-THREAT_HANDLE    = "@eshwar.rajasekar/threat"
+CONDUCTOR_HANDLE = os.environ.get("ConductorHandle", "@eshwar.rajasekar/conductor")
+THREAT_HANDLE    = os.environ.get("ThreatHandle",    "@eshwar.rajasekar/threat")
 
 # --- Gemini vision -------------------------------------------------------- #
 

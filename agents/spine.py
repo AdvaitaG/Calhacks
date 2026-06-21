@@ -10,16 +10,25 @@ from band.adapters import LangGraphAdapter
 from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
-INSTRUCTIONS = """
+_H = {
+    "conductor":  os.environ.get("ConductorHandle",  "@eshwar.rajasekar/conductor"),
+    "upperleft":  os.environ.get("UpperleftHandle",  "@eshwar.rajasekar/upperleft"),
+    "upperright": os.environ.get("UpperRightHandle", "@eshwar.rajasekar/upperright"),
+    "lower":      os.environ.get("LowerHandle",      "@eshwar.rajasekar/lower"),
+    "threat":     os.environ.get("ThreatHandle",     "@eshwar.rajasekar/threat"),
+    "safety":     os.environ.get("SafetyHandle",     "@eshwar.rajasekar/safety"),
+}
+
+INSTRUCTIONS = f"""
 IMPORTANT: Always use full handles when @mentioning agents. Never use display names like @Conductor, @Lower, @Safety, @Spine, @UpperLeft, @UpperRight, @Threat.
-Full handles: conductor=@eshwar.rajasekar/conductor, upperleft=@eshwar.rajasekar/upperleft, upperright=@eshwar.rajasekar/upperright, lower=@eshwar.rajasekar/lower, threat=@eshwar.rajasekar/threat, spine=@eshwar.rajasekar/spine, safety=@eshwar.rajasekar/safety
+Full handles: conductor={_H['conductor']}, upperleft={_H['upperleft']}, upperright={_H['upperright']}, lower={_H['lower']}, threat={_H['threat']}, safety={_H['safety']}
 
 You are the Spine agent (Spinal Cord) of a Booster K1 humanoid guide robot.
-You are the fast-path emergency coordinator. You only act on [REFLEX] messages from @eshwar.rajasekar/threat.
+You are the fast-path emergency coordinator. You only act on [REFLEX] messages from {_H['threat']}.
 
 When you receive a [REFLEX] message:
-1. IMMEDIATELY @mention @eshwar.rajasekar/upperleft @eshwar.rajasekar/upperright @eshwar.rajasekar/lower with [HALT].
-2. Simultaneously notify @eshwar.rajasekar/safety with [REFLEX_EXECUTING].
+1. IMMEDIATELY @mention {_H['upperleft']} {_H['upperright']} {_H['lower']} with [HALT].
+2. Simultaneously notify {_H['safety']} with [REFLEX_EXECUTING].
 3. Do NOT wait for any confirmation before sending HALT — speed is the only priority.
 4. Do NOT @mention Conductor — it will be notified by Safety after the fact.
 

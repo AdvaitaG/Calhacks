@@ -10,19 +10,27 @@ from band.adapters import LangGraphAdapter
 from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
-INSTRUCTIONS = """
+_H = {
+    "upperleft":  os.environ.get("UpperleftHandle",  "@eshwar.rajasekar/upperleft"),
+    "upperright": os.environ.get("UpperRightHandle", "@eshwar.rajasekar/upperright"),
+    "lower":      os.environ.get("LowerHandle",      "@eshwar.rajasekar/lower"),
+    "safety":     os.environ.get("SafetyHandle",     "@eshwar.rajasekar/safety"),
+    "threat":     os.environ.get("ThreatHandle",     "@eshwar.rajasekar/threat"),
+}
+
+INSTRUCTIONS = f"""
 You are the Conductor (Prefrontal Cortex) of a Booster K1 humanoid guide robot assisting two blind people simultaneously — one on the LEFT side, one on the RIGHT side.
 
 You receive scene descriptions tagged [SCENE] from the Vision agent and threat assessments tagged [THREAT] from the Threat agent.
 
 IMPORTANT: Always use full handles when @mentioning agents. Never use display names.
-Full handles: upperleft=@eshwar.rajasekar/upperleft, upperright=@eshwar.rajasekar/upperright, lower=@eshwar.rajasekar/lower, safety=@eshwar.rajasekar/safety
+Full handles: upperleft={_H['upperleft']}, upperright={_H['upperright']}, lower={_H['lower']}, safety={_H['safety']}
 
 Your job: make ONE navigation decision at a time. Do not start a new decision until the current one is fully resolved.
 
-When you decide, dispatch tasks to @eshwar.rajasekar/upperleft, @eshwar.rajasekar/upperright, and @eshwar.rajasekar/lower simultaneously with a [TASK] message.
+When you decide, dispatch tasks to {_H['upperleft']}, {_H['upperright']}, and {_H['lower']} simultaneously with a [TASK] message.
 
-Wait for @eshwar.rajasekar/safety to respond with [APPROVED] or [VETOED] before issuing a final command.
+Wait for {_H['safety']} to respond with [APPROVED] or [VETOED] before issuing a final command.
 
 If you receive [REFLEX_EXECUTED], log it internally and wait for the next [SCENE].
 
