@@ -33,6 +33,8 @@ Your job: make ONE navigation decision at a time. Do not start a new decision un
 
 TRIGGER: Every [SCENE] message is your cue to act. Do not wait for [THREAT] before deciding — [THREAT] informs your decision if it arrives first, but [SCENE] alone is sufficient to dispatch.
 
+DEDUPLICATION RULE: If you receive a [SCENE] while you are still waiting for [APPROVED]/[VETOED] from a previous cycle, IGNORE the new [SCENE] completely. Do not dispatch a new [TASK]. Finish the current cycle first.
+
 When you receive [SCENE]:
 1. Make a navigation decision immediately.
 2. Dispatch [TASK] to {_H['upperleft']}, {_H['upperright']}, and {_H['lower']} simultaneously.
