@@ -217,25 +217,50 @@ Use `h264` — mjpeg/png/raw ride a byte stream and won't appear as a proper vid
 
 ## Step 7 — Sending Commands TO the Robot
 
-When you receive a `FINAL_COMMAND` from Eshwar via Band, translate and fire via LiveKit:
+> IMPORTANT: LiveKit does NOT drive the Booster K1 directly. The K1 speaks
+> **DDS via `booster_robotics_sdk` (`B1LocoClient`)**, not LiveKit Portal.
+> There are TWO hops: (1) the command travels cloud→robot over LiveKit as a
+> Portal action, then (2) a small bridge process on/near the K1's Jetson
+> translates that action into a `B1LocoClient` call. LiveKit is transport;
+> the SDK is the last hop.
+
+The Portal action schema is velocity-based (see `robot/portal.yaml`):
+`{vx, vy, vyaw}` — forward/back, strafe, turn-rate. When you receive a
+`FINAL_COMMAND` from Eshwar via Band, map it to those velocities and send
+it as a Portal action:
 
 ```python
+# velocities are placeholders — tune against the K1 sim (MuJoCo) first
 COMMAND_MAP = {
-    "GUIDE_LEFT":     {"arm_direction": -1.0, "gait_speed": 0.5},
-    "GUIDE_RIGHT":    {"arm_direction":  1.0, "gait_speed": 0.5},
-    "MOVE_FORWARD":   {"arm_direction":  0.0, "gait_speed": 1.0},
-    "SLOW_DOWN":      {"arm_direction":  0.0, "gait_speed": 0.3},
-    "STOP":           {"arm_direction":  0.0, "gait_speed": 0.0},
-    "EMERGENCY_STOP": {"arm_direction":  0.0, "gait_speed": 0.0},
+    "GUIDE_LEFT":     {"vx": 0.2, "vy": 0.0, "vyaw":  0.3},
+    "GUIDE_RIGHT":    {"vx": 0.2, "vy": 0.0, "vyaw": -0.3},
+    "MOVE_FORWARD":   {"vx": 0.3, "vy": 0.0, "vyaw":  0.0},
+    "SLOW_DOWN":      {"vx": 0.1, "vy": 0.0, "vyaw":  0.0},
+    "STOP":           {"vx": 0.0, "vy": 0.0, "vyaw":  0.0},
+    "EMERGENCY_STOP": {"vx": 0.0, "vy": 0.0, "vyaw":  0.0},
 }
-
-def on_final_command(command_json: dict):
-    cmd = command_json["command"]
-    action_values = COMMAND_MAP[cmd]
-    robot_operator.send_action(action_values)
 ```
 
-**Coordinate with UFB team on exact joint value keys their robot accepts.** The keys above are placeholders.
+On the robot side, the bridge turns those velocities into K1 motion:
+
+```python
+# pseudo — runs on/near the Jetson, in robot.py's on_action hook
+from booster_robotics_sdk import B1LocoClient, ChannelFactory  # exact names: see SDK
+
+client = B1LocoClient()        # connect to the K1 (or sim) over DDS
+client.Move(vx, vy, vyaw)      # high-level velocity command
+# STOP / EMERGENCY_STOP -> Move(0,0,0) then damping mode
+```
+
+**Local reflex (do not route through the cloud):** the genuine sub-100ms
+emergency stop must run *in the bridge itself* off the K1's RGBD depth
+frame — if an obstacle is closer than a threshold dead-ahead, call
+`Move(0,0,0)` immediately, then notify Band `[REFLEX_EXECUTED]` after the
+fact. A cloud round-trip to an LLM can never hit 90ms.
+
+**Coordinate with the UFB team on exact `B1LocoClient` method/param names
+and DDS setup at the booth.** Build and tune the whole loop against the K1
+in **MuJoCo/Isaac sim first**, then point the same bridge at real hardware.
 
 ---
 
