@@ -21,6 +21,10 @@ trap cleanup EXIT INT TERM
 echo "creating a fresh Band room (clean_and_reset) ..."
 $PY clean_and_reset.py > logs/clean_and_reset.log 2>&1 \
   && grep -i "DONE" logs/clean_and_reset.log || { echo "clean_and_reset failed — see logs/clean_and_reset.log"; exit 1; }
+# Band rate-limits reconnecting the same identity right after clean_and_reset
+# ("recent supersede"). Wait out the window before the agents reconnect.
+echo "cooldown 30s (Band reconnect rate-limit) ..."
+sleep 30
 
 echo "starting agents + synthetic camera (logs/) ..."
 $PY agents/vision_agent.py > logs/vision.log 2>&1 & pids+=($!)
