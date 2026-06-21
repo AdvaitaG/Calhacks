@@ -5,9 +5,9 @@ plus apply_actions(cmd) for the arm/gait signals, so the EXACT command_bridge
 arbitration + failsafe logic drives a simulated Booster humanoid. Runs fully
 locally — no Nebius, no Band, no SDK.
 
-Model: the real Booster **T1** humanoid (MuJoCo Menagerie) — the K1's sibling,
-used here because a public K1 MJCF isn't available. It has the arm joints we need
-(shoulder/elbow), so the guide signals are visible.
+Model: the real Booster **K1** humanoid (K1_22dof.xml from BoosterRobotics/
+booster_assets) — the actual robot this project targets. Self-contained MJCF
+(meshes + floor + lights); 22 DOF including the arm joints used for guide signals.
 
 This is a *kinematic* driver: the base glides per {vx,vy,vyaw} and the legs hold a
 standing pose, while the ARMS animate per arm_action — that's the core guiding
@@ -35,9 +35,9 @@ import mujoco
 
 logger = logging.getLogger("sim_mujoco")
 
-MODEL_PATH = pathlib.Path(__file__).resolve().parent / "models" / "booster_t1" / "scene.xml"
+MODEL_PATH = pathlib.Path(__file__).resolve().parent / "models" / "booster_k1" / "K1_22dof.xml"
 
-# qpos addresses (from the T1 model; base free joint is qpos[0:7]).
+# qpos addresses (from the K1 model; base free joint is qpos[0:7]).
 BASE = slice(0, 7)
 ARM = {  # joint -> qpos index
     "L_sh_pitch": 9, "L_sh_roll": 10, "L_el_pitch": 11, "L_el_yaw": 12,
@@ -64,7 +64,10 @@ class MujocoSink:
     def __init__(self, model_path: str | None = None, viewer=None) -> None:
         self.model = mujoco.MjModel.from_xml_path(str(model_path or MODEL_PATH))
         self.data = mujoco.MjData(self.model)
-        mujoco.mj_resetDataKeyframe(self.model, self.data, 0)  # 'home' standing pose
+        if self.model.nkey > 0:
+            mujoco.mj_resetDataKeyframe(self.model, self.data, 0)  # 'home' keyframe
+        else:
+            mujoco.mj_resetData(self.model, self.data)  # model default = standing pose
         self.home = self.data.qpos.copy()
         self.x, self.y, self.yaw = 0.0, 0.0, 0.0
         self.base_z = float(self.home[2])
@@ -151,7 +154,7 @@ async def _demo(view: bool) -> None:
         viewer = mujoco.viewer.launch_passive(sink.model, sink.data)
         _front_view(viewer, sink.model)
         sink._viewer = viewer
-    logger.info("[sim] driving Booster T1 from mock FINAL_COMMANDs ...")
+    logger.info("[sim] driving Booster K1 from mock FINAL_COMMANDs ...")
     await run(mock_command_source(), sink)
     logger.info("[sim] final pose: x=%.2f y=%.2f yaw=%.0f°", *sink.pose)
     if viewer is not None:
