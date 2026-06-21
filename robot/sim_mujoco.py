@@ -37,30 +37,49 @@ logger = logging.getLogger("sim_mujoco")
 
 MODEL_PATH = pathlib.Path(__file__).resolve().parent / "models" / "booster_k1" / "K1_22dof.xml"
 
-# qpos addresses (from the K1 model; base free joint is qpos[0:7]).
-BASE = slice(0, 7)
-ARM = {  # joint -> qpos index
-    "L_sh_pitch": 9, "L_sh_roll": 10, "L_el_pitch": 11, "L_el_yaw": 12,
-    "R_sh_pitch": 13, "R_sh_roll": 14, "R_el_pitch": 15, "R_el_yaw": 16,
+BASE = slice(0, 7)  # free joint occupies qpos[0:7]
+
+# Use name-based lookup at runtime — immune to XML joint ordering changes.
+def _jaddr(model, name: str) -> int:
+    return int(model.joint(name).qposadr[0])
+
+# Proper standing pose for K1 — slight knee bend so robot doesn't fall through floor.
+# Hip/knee/ankle angles are in radians; arms hang naturally.
+STANDING_POSE = {
+    "Left_Hip_Pitch":   -0.05,
+    "Left_Hip_Roll":     0.03,
+    "Left_Knee_Pitch":   0.10,
+    "Left_Ankle_Pitch":  0.05,
+    "Right_Hip_Pitch":  -0.05,
+    "Right_Hip_Roll":   -0.03,
+    "Right_Knee_Pitch":  0.10,
+    "Right_Ankle_Pitch": 0.05,
+    "ALeft_Shoulder_Pitch":  0.1,
+    "Left_Shoulder_Roll":    0.2,
+    "ARight_Shoulder_Pitch": 0.1,
+    "Right_Shoulder_Roll":  -0.2,
 }
 
-# Per-arm shoulder offsets (radians) relative to the home pose for each guide
-# signal. side = +1 for the left arm, -1 for the right (mirrors the roll).
-# Tunable — the point is each action yields a visibly distinct, correct-direction
-# arm pose. (pitch<0 swings the arm forward/up; roll abducts it sideways.)
+# Per-arm shoulder offsets (radians) for each guide signal.
+# pitch<0 = arm swings forward/up; roll = abducts sideways.
+# sign parameter mirrors roll direction for left (+1) vs right (-1) arm.
 ARM_SIGNAL = {
-    "HOLD_STEADY":       (0.0, 0.0),   # rest at home
-    "GENTLE_LEFT_PULL":  (-0.4, 0.5),  # lead toward the left
-    "GENTLE_RIGHT_PULL": (-0.4, -0.5),
-    "FORWARD_PUSH":      (-1.0, 0.0),  # extend arm forward
-    "RELEASE":           (0.6, 0.0),   # arm relaxes downward
+    "HOLD_STEADY":       (0.0,  0.0),
+    "GENTLE_LEFT_PULL":  (-0.5, 0.6),
+    "GENTLE_RIGHT_PULL": (-0.5,-0.6),
+    "FORWARD_PUSH":      (-1.2, 0.0),
+    "RELEASE":           (0.5,  0.0),
 }
-HALT_EXTEND = (-1.4, 0.0)  # emergency: arm raised palm-out (traffic-stop)
+HALT_EXTEND = (-1.6, 0.0)  # emergency: arm raised palm-out
 
-# Leg joints for the procedural walking gait (qpos indices, K1 model).
-LEG = {
-    "L_hip_pitch": 17, "L_knee": 20, "L_ankle_pitch": 21,
-    "R_hip_pitch": 23, "R_knee": 26, "R_ankle_pitch": 27,
+# Leg joint names for gait animation.
+LEG_JOINTS = {
+    "L_hip":   "Left_Hip_Pitch",
+    "L_knee":  "Left_Knee_Pitch",
+    "L_ankle": "Left_Ankle_Pitch",
+    "R_hip":   "Right_Hip_Pitch",
+    "R_knee":  "Right_Knee_Pitch",
+    "R_ankle": "Right_Ankle_Pitch",
 }
 # Gait shaping (radians / Hz). Kinematic stand-in for a learned locomotion
 # policy — legs swing in anti-phase, amplitude scales with speed. The real
@@ -79,10 +98,32 @@ class MujocoSink:
     def __init__(self, model_path: str | None = None, viewer=None) -> None:
         self.model = mujoco.MjModel.from_xml_path(str(model_path or MODEL_PATH))
         self.data = mujoco.MjData(self.model)
-        if self.model.nkey > 0:
-            mujoco.mj_resetDataKeyframe(self.model, self.data, 0)  # 'home' keyframe
-        else:
-            mujoco.mj_resetData(self.model, self.data)  # model default = standing pose
+        mujoco.mj_resetData(self.model, self.data)
+
+        # Build name -> qpos address map for all joints we care about
+        self._jmap = {}
+        for name in list(STANDING_POSE.keys()) + list(LEG_JOINTS.values()) + [
+            "ALeft_Shoulder_Pitch", "Left_Shoulder_Roll",
+            "ARight_Shoulder_Pitch", "Right_Shoulder_Roll",
+        ]:
+            try:
+                self._jmap[name] = _jaddr(self.model, name)
+            except Exception:
+                pass
+
+        # Set proper standing pose
+        for jname, angle in STANDING_POSE.items():
+            if jname in self._jmap:
+                self.data.qpos[self._jmap[jname]] = angle
+
+        # Place robot at standing height
+        self.data.qpos[2] = 0.72  # K1 hip height ~0.72m
+        self.data.qpos[3] = 1.0   # quaternion w=1 (upright)
+        self.data.qpos[4] = 0.0
+        self.data.qpos[5] = 0.0
+        self.data.qpos[6] = 0.0
+        mujoco.mj_forward(self.model, self.data)
+
         self.home = self.data.qpos.copy()
         self.x, self.y, self.yaw = 0.0, 0.0, 0.0
         self.base_z = float(self.home[2])
