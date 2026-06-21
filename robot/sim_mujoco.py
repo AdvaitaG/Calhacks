@@ -57,6 +57,21 @@ ARM_SIGNAL = {
 }
 HALT_EXTEND = (-1.4, 0.0)  # emergency: arm raised palm-out (traffic-stop)
 
+# Leg joints for the procedural walking gait (qpos indices, K1 model).
+LEG = {
+    "L_hip_pitch": 17, "L_knee": 20, "L_ankle_pitch": 21,
+    "R_hip_pitch": 23, "R_knee": 26, "R_ankle_pitch": 27,
+}
+# Gait shaping (radians / Hz). Kinematic stand-in for a learned locomotion
+# policy — legs swing in anti-phase, amplitude scales with speed. The real
+# physics gait needs an RL policy trained on GPU (booster_gym/booster_train,
+# i.e. Nebius); booster_deploy has the K1 locomotion config but ships no K1
+# walk checkpoint.
+STEP_FREQ = 1.4        # steps/sec at full speed
+REF_SPEED = 0.3        # m/s that maps to full stride (matches MOVE_FORWARD vx)
+HIP_AMP = 0.55         # thigh swing
+KNEE_AMP = 0.9         # knee flexion on the swinging leg
+
 
 class MujocoSink:
     """Velocity-commanded kinematic humanoid. Matches the B1LocoClient interface."""
@@ -71,6 +86,7 @@ class MujocoSink:
         self.home = self.data.qpos.copy()
         self.x, self.y, self.yaw = 0.0, 0.0, 0.0
         self.base_z = float(self.home[2])
+        self.phase = 0.0  # gait cycle phase
         self._last_t: float | None = None
         self._viewer = viewer
         self._last_log = None
@@ -91,7 +107,27 @@ class MujocoSink:
         self.yaw += vyaw * dt
         self.x += (vx * math.cos(self.yaw) - vy * math.sin(self.yaw)) * dt
         self.y += (vx * math.sin(self.yaw) + vy * math.cos(self.yaw)) * dt
+        self._walk(vx, vy, vyaw, dt)
         self._set()
+
+    def _walk(self, vx: float, vy: float, vyaw: float, dt: float) -> None:
+        """Procedural anti-phase leg gait; amplitude scales with speed, legs
+        return to standing when stopped."""
+        q = self.data.qpos
+        speed = math.hypot(vx, vy) + 0.3 * abs(vyaw)
+        amp = max(0.0, min(speed / REF_SPEED, 1.0))
+        if amp > 0.02:
+            self.phase += 2 * math.pi * STEP_FREQ * amp * dt
+            s = math.sin(self.phase)
+            for side, ph in (("L", self.phase), ("R", self.phase + math.pi)):
+                sw = math.sin(ph)
+                q[LEG[f"{side}_hip_pitch"]] = HIP_AMP * amp * sw
+                q[LEG[f"{side}_knee"]] = KNEE_AMP * amp * max(0.0, sw)   # bend on forward swing
+                q[LEG[f"{side}_ankle_pitch"]] = -0.4 * HIP_AMP * amp * sw
+        else:
+            # ease legs back to a straight stand
+            for k in LEG.values():
+                q[k] += (self.home[k] - q[k]) * 0.2
 
     def _arm_to(self, side: str, sign: int, pitch: float, roll: float) -> None:
         """Lerp one shoulder toward (home + offset) for smooth motion."""
