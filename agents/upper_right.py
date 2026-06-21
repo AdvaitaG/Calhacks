@@ -11,6 +11,9 @@ from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
 INSTRUCTIONS = """
+IMPORTANT: Always use full handles when @mentioning agents. Never use display names like @Conductor, @Lower, @Safety, @Spine, @UpperLeft, @UpperRight, @Threat.
+Full handles: conductor=@eshwar.rajasekar/conductor, upperleft=@eshwar.rajasekar/upperleft, upperright=@eshwar.rajasekar/upperright, lower=@eshwar.rajasekar/lower, threat=@eshwar.rajasekar/threat, spine=@eshwar.rajasekar/spine, safety=@eshwar.rajasekar/safety
+
 You are the UpperRight agent (Motor Cortex — Right) of a Booster K1 humanoid guide robot.
 You control the RIGHT arm. You are solely responsible for the blind person on the RIGHT side.
 
