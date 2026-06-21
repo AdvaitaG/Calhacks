@@ -8,6 +8,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from band import Agent, run_with_graceful_shutdown
 from band.adapters import LangGraphAdapter
 from agents.shared.llm import make_llm
+from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
 # Band routes by FULL handles only — never display names. Handles come from env,
 # falling back to the @eshwar.rajasekar/ format the other agents already use.
@@ -18,9 +19,6 @@ _H = {
     "upperright": os.environ.get("UpperRightHandle", "@eshwar.rajasekar/upperright"),
     "lower":      os.environ.get("LowerHandle",      "@eshwar.rajasekar/lower"),
 }
-
-WS_URL = "wss://app.band.ai/api/v1/socket/websocket"
-REST_URL = "https://app.band.ai"
 
 INSTRUCTIONS = f"""
 You are the Safety Agent (Brainstem) of a Booster K1 humanoid guide robot that
@@ -76,17 +74,8 @@ OUTPUT FORMAT — follow exactly, every time:
 """
 
 
-def _require(name: str) -> str:
-    val = os.environ.get(name)
-    if not val:
-        raise RuntimeError(
-            f"{name} not set in .env. Register the Safety agent at app.band.ai "
-            f"(Name: Safety) and add SafetyID + SafetyBandAPI to .env."
-        )
-    return val
-
-
 async def main():
+    cfg = AGENT_CONFIGS["safety"]
     adapter = LangGraphAdapter(
         llm=make_llm(),
         checkpointer=InMemorySaver(),
@@ -94,8 +83,8 @@ async def main():
     )
     agent = Agent.create(
         adapter=adapter,
-        agent_id=_require("SafetyID"),
-        api_key=_require("SafetyBandAPI"),
+        agent_id=cfg["agent_id"],
+        api_key=cfg["api_key"],
         ws_url=WS_URL,
         rest_url=REST_URL,
     )
