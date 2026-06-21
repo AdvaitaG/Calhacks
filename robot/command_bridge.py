@@ -157,11 +157,23 @@ class B1LocoClientStub:
 async def mock_command_source() -> AsyncIterator[str]:
     """Scripted FINAL_COMMANDs that exercise every behavior, no Band needed."""
 
+    # plausible arm signals per command, so the sim's arms actually move
+    ARMS = {
+        "GUIDE_LEFT":     ("GENTLE_LEFT_PULL", "GENTLE_LEFT_PULL"),
+        "GUIDE_RIGHT":    ("GENTLE_RIGHT_PULL", "GENTLE_RIGHT_PULL"),
+        "MOVE_FORWARD":   ("FORWARD_PUSH", "FORWARD_PUSH"),
+        "SLOW_DOWN":      ("HOLD_STEADY", "HOLD_STEADY"),
+        "STOP":           ("HOLD_STEADY", "HOLD_STEADY"),
+        "EMERGENCY_STOP": ("HOLD_STEADY", "HOLD_STEADY"),
+    }
+
     def mk(command: str, path: str = "CORTICAL", tag: bool = True) -> str:
+        la, ra = ARMS.get(command, ("HOLD_STEADY", "HOLD_STEADY"))
         body = json.dumps({
             "type": "FINAL_COMMAND", "command": command, "path": path,
-            "gait_action": "WALK_NORMAL", "left_arm_action": "HOLD_STEADY",
-            "right_arm_action": "HOLD_STEADY", "free_arm_action": "SWEEP",
+            "gait_action": "WALK_NORMAL", "left_arm_action": la,
+            "right_arm_action": ra,
+            "free_arm_action": "HALT_EXTEND" if command == "EMERGENCY_STOP" else "SWEEP",
             "pace_ms": 500, "reason": f"mock {command}",
         })
         return f"[FINAL_COMMAND] {body}" if tag else body
@@ -254,6 +266,10 @@ async def run(source: AsyncIterator[str], client: B1LocoClientStub) -> None:
                     client.damp()
                 last_state = state
             client.Move(vx, vy, vyaw)
+            # push arm/gait signals to sinks that support them (e.g. MujocoSink)
+            apply = getattr(client, "apply_actions", None)
+            if apply is not None:
+                apply(arbiter.active)
             await asyncio.sleep(period)
 
     consumer = asyncio.create_task(consume())
