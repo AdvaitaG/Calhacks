@@ -128,6 +128,19 @@ class MujocoSink:
         return (self.x, self.y, math.degrees(self.yaw))
 
 
+def _front_view(viewer, model) -> None:
+    """Camera that follows the robot with a clean, full front view."""
+    # track the base body (the one carrying the free joint) so it stays centered
+    free_joint = 0  # the only free joint in the model
+    cam = viewer.cam
+    cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+    cam.trackbodyid = int(model.jnt_bodyid[free_joint])
+    cam.distance = 3.2      # whole ~1.3 m robot in frame
+    cam.azimuth = 180.0     # in front of a +x-facing robot -> sees the front
+    cam.elevation = -8.0    # slight downward tilt
+    viewer.sync()
+
+
 async def _demo(view: bool) -> None:
     from command_bridge import run, mock_command_source
 
@@ -136,6 +149,7 @@ async def _demo(view: bool) -> None:
     if view:
         import mujoco.viewer
         viewer = mujoco.viewer.launch_passive(sink.model, sink.data)
+        _front_view(viewer, sink.model)
         sink._viewer = viewer
     logger.info("[sim] driving Booster T1 from mock FINAL_COMMANDs ...")
     await run(mock_command_source(), sink)
