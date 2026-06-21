@@ -20,6 +20,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
+import sys
 import time
 from dataclasses import dataclass, field
 from typing import AsyncIterator, Optional, Tuple
@@ -178,12 +180,52 @@ async def mock_command_source() -> AsyncIterator[str]:
     await asyncio.sleep(4.0)
 
 
-# TODO(live): implement once Eshwar confirms DEPENDENCIES_FROM_ESHWAR.md #1-4.
-# async def band_command_source() -> AsyncIterator[str]:
-#     link = await connect_band(ROBOT_ID, ROBOT_BAND_API)   # dep #1
-#     async for msg in link.subscribe(room=CONDUCTOR_ROOM):  # dep #2
-#         if msg.sender == CONDUCTOR_HANDLE and "FINAL_COMMAND" in msg.content:
-#             yield msg.content                              # dep #3/#4 format
+# Band wire constants (mirror agents/shared/config.py).
+WS_URL = "wss://app.band.ai/api/v1/socket/websocket"
+REST_URL = "https://app.band.ai"
+
+
+async def band_command_source() -> AsyncIterator[str]:
+    """LIVE source: subscribe to the Band room(s) and yield raw message content
+    for anything containing FINAL_COMMAND. Mirrors the BandLink pattern in
+    agents/vision_agent.py. We filter on content only (parse_final_command
+    validates the rest), so this accepts CORTICAL and REFLEX commands no matter
+    which agent posts them — robust to the open questions in
+    ../DEPENDENCIES_FROM_ESHWAR.md #2-4. Needs RobotID/RobotBandAPI (dep #1)."""
+    from band.platform.link import BandLink
+    from band.platform.event import MessageEvent, RoomAddedEvent
+    from band.client.rest import DEFAULT_REQUEST_OPTIONS
+
+    agent_id = os.environ["RobotID"]
+    link = BandLink(agent_id=agent_id, api_key=os.environ["RobotBandAPI"],
+                    ws_url=WS_URL, rest_url=REST_URL)
+    await link.connect()
+    logger.info("[bridge] connected to Band as RobotID; discovering rooms ...")
+
+    try:
+        resp = await link.rest.agent_api_chats.list_agent_chats(
+            request_options=DEFAULT_REQUEST_OPTIONS)
+        rooms = resp.data or []
+    except Exception as e:  # noqa: BLE001 — log and keep waiting for invites
+        logger.warning("[bridge] could not list rooms: %s", e)
+        rooms = []
+    for r in rooms:
+        await link.subscribe_room(r.id)
+        logger.info("[bridge] subscribed to room %s", r.id)
+    await link.subscribe_agent_rooms(agent_id)
+    if not rooms:
+        logger.info("[bridge] no existing rooms — waiting for invite ...")
+
+    async for event in link:
+        if isinstance(event, RoomAddedEvent) and event.room_id:
+            await link.subscribe_room(event.room_id)
+            logger.info("[bridge] joined new room %s", event.room_id)
+        elif isinstance(event, MessageEvent) and event.payload:
+            content = event.payload.content or ""
+            if "FINAL_COMMAND" in content:
+                who = event.payload.sender_name or event.payload.sender_id
+                logger.info("[bridge] FINAL_COMMAND received from %s", who)
+                yield content
 
 
 # --- run loop ------------------------------------------------------------- #
@@ -222,11 +264,19 @@ async def run(source: AsyncIterator[str], client: B1LocoClientStub) -> None:
 
 
 def main() -> None:
-    logging.basicConfig(level="INFO", format="%(asctime)s %(message)s",
-                        datefmt="%H:%M:%S")
-    logger.info("[bridge] HOUR-2 return path — MOCK mode (no Band, stubbed K1)")
-    asyncio.run(run(mock_command_source(), B1LocoClientStub()))
-    logger.info("[bridge] demo complete")
+    logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+                        format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
+    mode = sys.argv[1] if len(sys.argv) > 1 else "mock"
+
+    if mode == "band":
+        from _common import load_env  # loads .env from robot/ or repo root
+        load_env()
+        logger.info("[bridge] HOUR-2 return path — LIVE Band source, stubbed K1")
+        asyncio.run(run(band_command_source(), B1LocoClientStub()))
+    else:
+        logger.info("[bridge] HOUR-2 return path — MOCK mode (no Band, stubbed K1)")
+        asyncio.run(run(mock_command_source(), B1LocoClientStub()))
+        logger.info("[bridge] demo complete")
 
 
 if __name__ == "__main__":
