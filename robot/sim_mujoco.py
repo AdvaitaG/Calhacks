@@ -148,11 +148,13 @@ class MujocoSink:
     def apply_actions(self, cmd) -> None:
         """Drive the arms from a FINAL_COMMAND's arm actions (or None -> rest)."""
         if time.monotonic() < self._wave_until:
-            # raise the right arm and oscillate it like a wave
+            # hello wave: raise the right arm high and rock the FOREARM at the
+            # elbow side-to-side (a greeting, not a sideways arm swing).
             q = self.data.qpos
-            w = math.sin((self._wave_until - time.monotonic()) * 10.0)
-            q[ARM["R_sh_pitch"]] = self.home[ARM["R_sh_pitch"]] - 1.6   # arm up
-            q[ARM["R_sh_roll"]] = self.home[ARM["R_sh_roll"]] + 0.4 * w  # wave side-to-side
+            w = math.sin((self._wave_until - time.monotonic()) * 9.0)
+            q[ARM["R_sh_pitch"]] = self.home[ARM["R_sh_pitch"]] - 1.8   # arm raised high
+            q[ARM["R_sh_roll"]] = self.home[ARM["R_sh_roll"]] - 0.25    # slightly out from body
+            q[ARM["R_el_pitch"]] = self.home[ARM["R_el_pitch"]] + 0.5 + 0.6 * w  # forearm waves
             self._set()
             return
         if cmd is None:

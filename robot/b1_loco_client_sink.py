@@ -40,17 +40,18 @@ class B1LocoClientSink:
         self._Position, self._Orientation, self._Posture = Position, Orientation, Posture
         self._hand = {"L": B1HandIndex.kLeftHand, "R": B1HandIndex.kRightHand}
         self._last_arms = None
-        iface = os.environ.get("BOOSTER_NET_IFACE", "")
-        if iface:
-            ChannelFactory.Instance().Init(0, iface)
-        else:
-            ChannelFactory.Instance().Init(0)
+        # Address of the robot endpoint to drive over DDS:
+        #   "127.0.0.1"  -> local Booster Studio simulator (see the real presets in sim)
+        #   <robot IP / NIC> -> the physical K1 at the booth
+        # Default to Booster Studio on localhost.
+        addr = os.environ.get("BOOSTER_ROBOT_ADDR", "127.0.0.1")
+        ChannelFactory.Instance().Init(0, addr)
+        logger.info("[b1] DDS endpoint: %s", addr)
         self.client = B1LocoClient()
         self.client.Init()
         self.client.ChangeMode(RobotMode.kWalking)
         self._damping = False
-        logger.info("[b1] connected to K1 via SDK (iface=%r); mode=Walking",
-                    iface or "default")
+        logger.info("[b1] connected via SDK to %s; mode=Walking", addr)
 
     def Move(self, vx: float, vy: float, vyaw: float) -> None:  # noqa: N802 (SDK name)
         if self._damping and (vx or vy or vyaw):
