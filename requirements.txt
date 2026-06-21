@@ -1,0 +1,7 @@
+band
+langchain-google-genai
+langgraph
+python-dotenv
+arize-phoenix
+opentelemetry-sdk
+opentelemetry-exporter-otlp
