@@ -3,6 +3,11 @@ langchain
 langchain-google-genai
 langgraph
 python-dotenv
+# robot-side: LiveKit transport + webcam capture (robot/robot.py)
+livekit
+livekit-api
+livekit-portal
+opencv-python
 arize-phoenix
 opentelemetry-sdk
 opentelemetry-exporter-otlp
