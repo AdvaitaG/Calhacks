@@ -47,10 +47,13 @@ state = {
     "safety":        {"status": "—", "reason": "—", "ts": 0, "thinking": ""},
     "spine":         {"status": "—", "ts": 0, "thinking": ""},
     "final_command": {"command": "—", "reason": "—", "path": "—", "left_arm": "—", "right_arm": "—", "free_arm": "—", "gait": "—", "ts": 0},
+    "pipeline_latency_ms": None,   # wall-clock ms from [SCENE] recv to [FINAL_COMMAND] recv
+    "latency_history": [],         # last 10 latency values for sparkline
     "message_count": 0,
     "connected":     False,
-    "log":           [],   # last 30 messages [{ts, sender, content, tag}]
+    "log":           [],
 }
+_scene_recv_ms: int | None = None   # wall-clock time the last [SCENE] arrived
 _log_deque: deque = deque(maxlen=30)
 _listeners: list[asyncio.Queue] = []
 _loop: asyncio.AbstractEventLoop | None = None
@@ -109,11 +112,13 @@ def _thinking(content: str, max_len: int = 120) -> str:
 
 
 def _parse_message(content: str, sender: str):
+    global _scene_recv_ms
     content = content.strip()
     state["message_count"] += 1
     sender_lower = sender.lower()
 
     if content.startswith("[SCENE]"):
+        _scene_recv_ms = _now_ms()   # start the pipeline clock
         _log(sender, content, "SCENE")
         try:
             data = json.loads(content[7:].strip())
@@ -214,6 +219,14 @@ def _parse_message(content: str, sender: str):
 
     elif "FINAL_COMMAND" in content:
         _log(sender, content, "FINAL_COMMAND")
+        # measure end-to-end pipeline latency
+        if _scene_recv_ms is not None:
+            latency = _now_ms() - _scene_recv_ms
+            state["pipeline_latency_ms"] = latency
+            history = state["latency_history"]
+            history.append(latency)
+            if len(history) > 10:
+                history.pop(0)
         try:
             brace = content.index("{")
             data = json.loads(content[brace:content.rindex("}") + 1])
@@ -433,7 +446,17 @@ h1 { font-size: 1.5rem; letter-spacing: 3px; color: #58a6ff; }
     <h1>⚡ BAYMAX</h1>
     <div class="subtitle">Live Multi-Agent Pipeline — UC Berkeley AI Hackathon 2026</div>
   </div>
-  <span id="conn-badge" class="badge grey">Connecting…</span>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div id="latency-box" style="text-align:right;display:none;">
+      <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:#8b949e;">End-to-End Latency</div>
+      <div style="display:flex;align-items:baseline;gap:4px;">
+        <span id="latency-value" style="font-size:1.8rem;font-weight:800;color:#58a6ff;font-family:monospace;">—</span>
+        <span style="font-size:0.8rem;color:#8b949e;">ms</span>
+      </div>
+      <canvas id="latency-spark" width="120" height="24" style="display:block;margin-top:2px;"></canvas>
+    </div>
+    <span id="conn-badge" class="badge grey">Connecting…</span>
+  </div>
 </div>
 
 <div class="main">
@@ -850,9 +873,45 @@ function update(s) {
 
   document.getElementById('msg-count').textContent = 'messages seen: ' + (s.message_count || 0);
 
+  // Latency display
+  if (s.pipeline_latency_ms != null) {
+    const box = document.getElementById('latency-box');
+    box.style.display = 'block';
+    const val = document.getElementById('latency-value');
+    val.textContent = s.pipeline_latency_ms;
+    // color-code: green <3s, yellow <6s, red >=6s
+    val.style.color = s.pipeline_latency_ms < 3000 ? '#3fb950' : s.pipeline_latency_ms < 6000 ? '#d29922' : '#f85149';
+    drawSparkline(s.latency_history || []);
+  }
+
   const badge = document.getElementById('conn-badge');
   if (s.connected) { badge.textContent = '● Live'; badge.className = 'badge green'; }
   else { badge.textContent = '○ Waiting for Band credentials'; badge.className = 'badge grey'; }
+}
+
+function drawSparkline(history) {
+  const canvas = document.getElementById('latency-spark');
+  if (!canvas || history.length < 2) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const max = Math.max(...history, 1);
+  const w = canvas.width / (history.length - 1);
+  ctx.beginPath();
+  ctx.strokeStyle = '#58a6ff88';
+  ctx.lineWidth = 1.5;
+  history.forEach((v, i) => {
+    const x = i * w;
+    const y = canvas.height - (v / max) * (canvas.height - 2) - 1;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  // dot at latest
+  const lx = (history.length - 1) * w;
+  const ly = canvas.height - (history[history.length-1] / max) * (canvas.height - 2) - 1;
+  ctx.beginPath();
+  ctx.arc(lx, ly, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#58a6ff';
+  ctx.fill();
 }
 
 const es = new EventSource('/events');
