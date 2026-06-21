@@ -20,7 +20,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
 from band.platform.link import BandLink
-from band.platform.event import RoomAddedEvent, MessageEvent
+from band.platform.event import RoomAddedEvent
 from band.runtime.tools import AgentTools
 from band.client.rest import DEFAULT_REQUEST_OPTIONS
 from agents.shared.config import WS_URL, REST_URL
@@ -176,11 +176,9 @@ async def _publish_scene(tools: AgentTools, jpeg_bytes: bytes) -> None:
               f"hazard={scene.get('hazard_level')} | "
               f"{scene['latency_ms']}ms")
 
-        # Publish to Conductor and Threat simultaneously (they process in parallel)
-        await tools.send_message(
-            content,
-            mentions=[CONDUCTOR_HANDLE, THREAT_HANDLE],
-        )
+        # Broadcast to room — LangGraphAdapter agents respond to all messages.
+        # Conductor and Threat instructions filter on [SCENE] tag.
+        await tools.send_message(content)
         print("[Vision] Scene posted to Band")
     except Exception as e:
         import traceback
@@ -252,17 +250,7 @@ async def main() -> None:
         if vision_task is not None:
             return
         print(f"[Vision] Starting vision loop for room {room_id}")
-        try:
-            resp = await link.rest.agent_api_participants.list_agent_participants(
-                chat_id=room_id,
-                request_options=DEFAULT_REQUEST_OPTIONS,
-            )
-            participants = [p.model_dump(exclude_none=True) for p in (resp.data or [])]
-            print(f"[Vision] {len(participants)} participants found")
-        except Exception as e:
-            print(f"[Vision] Could not fetch participants: {e} — sending without mentions")
-            participants = None
-        tools = AgentTools(room_id=room_id, rest=link.rest, participants=participants)
+        tools = AgentTools(room_id=room_id, rest=link.rest)
         vision_task = asyncio.create_task(_vision_loop(tools))
 
     # Check for rooms the agent is already in
