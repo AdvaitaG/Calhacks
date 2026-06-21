@@ -263,6 +263,9 @@ async def run(source: AsyncIterator[str], client: B1LocoClientStub) -> None:
                         cmd.command, cmd.path, status)
 
     async def control_tick() -> None:
+        # greeting wave at startup (sim/stub only; skip on real K1 mid mode-change)
+        if hasattr(client, "WaveHand") and type(client).__name__ != "B1LocoClientSink":
+            client.WaveHand()
         period = 1.0 / TICK_HZ
         last_state = None
         while True:

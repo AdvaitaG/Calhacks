@@ -28,6 +28,7 @@ class B1LocoClientSink:
         try:
             from booster_robotics_sdk_python import (
                 B1LocoClient, ChannelFactory, RobotMode,
+                Position, Orientation, Posture, B1HandIndex,
             )
         except ImportError as e:  # SDK only present on/near the K1
             raise RuntimeError(
@@ -36,6 +37,9 @@ class B1LocoClientSink:
             ) from e
 
         self._RobotMode = RobotMode
+        self._Position, self._Orientation, self._Posture = Position, Orientation, Posture
+        self._hand = {"L": B1HandIndex.kLeftHand, "R": B1HandIndex.kRightHand}
+        self._last_arms = None
         iface = os.environ.get("BOOSTER_NET_IFACE", "")
         if iface:
             ChannelFactory.Instance().Init(0, iface)
@@ -69,15 +73,39 @@ class B1LocoClientSink:
         except Exception as e:  # noqa: BLE001
             logger.warning("[b1] WaveHand failed: %s", e)
 
+    def _posture(self, action: str, hand: str):
+        """Hand end-effector target for a guide signal. Frame: x fwd, +y left,
+        z up. TODO(booth): tune these against the real K1 reach envelope."""
+        side = 1.0 if hand == "L" else -1.0
+        base_y = 0.25 * side                      # left hand at +y, right at -y
+        table = {
+            "HOLD_STEADY":       (0.30, base_y,        0.00),
+            "RELEASE":           (0.22, base_y,       -0.10),
+            "FORWARD_PUSH":      (0.42, base_y,        0.05),
+            "GENTLE_LEFT_PULL":  (0.32, base_y + 0.12, 0.02),
+            "GENTLE_RIGHT_PULL": (0.32, base_y - 0.12, 0.02),
+        }
+        x, y, z = table.get(action, table["HOLD_STEADY"])
+        p = self._Posture()
+        p.position = self._Position(x, y, z)
+        p.orientation = self._Orientation(0.0, 0.0, 0.0)
+        return p
+
     def apply_actions(self, cmd) -> None:
         if cmd is None:
             return
         if cmd.is_emergency or cmd.free_arm_action == "HALT_EXTEND":
             self.damp()
             return
-        # TODO(booth): map GENTLE_LEFT_PULL / GENTLE_RIGHT_PULL / FORWARD_PUSH to
-        # client.MoveHandEndEffector(target_posture, time_ms, hand_index). The
-        # target postures must be tuned against the real K1, so for now the base
-        # Move() does the guiding and arm intents are just logged.
-        logger.debug("[b1] arms L=%s R=%s free=%s",
-                     cmd.left_arm_action, cmd.right_arm_action, cmd.free_arm_action)
+        la = cmd.left_arm_action or "HOLD_STEADY"
+        ra = cmd.right_arm_action or "HOLD_STEADY"
+        if (la, ra) == self._last_arms:
+            return  # only re-send to the SDK when the guide signal changes
+        self._last_arms = (la, ra)
+        t = max(300, int(getattr(cmd, "pace_ms", 500)))
+        try:
+            self.client.MoveHandEndEffector(self._posture(la, "L"), t, self._hand["L"])
+            self.client.MoveHandEndEffector(self._posture(ra, "R"), t, self._hand["R"])
+            logger.info("[b1] arms L=%s R=%s -> MoveHandEndEffector", la, ra)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("[b1] MoveHandEndEffector failed: %s", e)
