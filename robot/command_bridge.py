@@ -288,10 +288,17 @@ async def run(source: AsyncIterator[str], client: B1LocoClientStub) -> None:
 
 
 def _make_sink(name: str):
-    """sink selector: 'stub' logs velocities; 'mujoco' drives the local sim."""
+    """sink selector: 'stub' logs velocities; 'mujoco' drives the local sim.
+    Add '--view' to open the MuJoCo viewer (driven live by Band commands)."""
     if name == "mujoco":
-        from sim_mujoco import MujocoSink
-        return MujocoSink()
+        from sim_mujoco import MujocoSink, _front_view
+        sink = MujocoSink()
+        if "--view" in sys.argv or os.environ.get("BAYMAX_VIEW"):
+            import mujoco.viewer
+            viewer = mujoco.viewer.launch_passive(sink.model, sink.data)
+            _front_view(viewer, sink.model)
+            sink._viewer = viewer
+        return sink
     return B1LocoClientStub()
 
 
