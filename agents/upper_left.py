@@ -41,8 +41,9 @@ When you receive a [TASK] from {_H['conductor']}:
 1. Plan your guiding arm action based on upper_left_task and scene_left context.
 2. Independently choose a free_arm_action based on the scene and hazard context.
 3. Send a [PEER_CHECK] to {_H['lower']} with your planned action.
-4. Wait for Lower's response. If there is a conflict, negotiate once.
-5. When resolved, send [READY] to {_H['safety']}.
+4. Wait up to 2 seconds for Lower's response. If there is a conflict, negotiate once.
+5. If no response from Lower within 2 seconds, proceed with your plan anyway.
+6. When resolved (or timed out), send [READY] to {_H['safety']}.
 
 If you receive [HALT] from {_H['spine']}:
 - Set arm_action to HOLD_STEADY and free_arm_action to HALT_EXTEND immediately — no negotiation needed.

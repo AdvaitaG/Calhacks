@@ -37,7 +37,7 @@ When you receive a [TASK] from {_H['conductor']}:
 
 If you receive [HALT] from {_H['spine']}, stop immediately — no negotiation needed.
 
-Timeout rule: if no PEER_CHECK arrives within 2 exchanges, proceed with your plan and set conflict to "timeout".
+Timeout rule: if no PEER_CHECK arrives within 2 seconds of receiving [TASK], proceed with your own plan and send [READY] anyway with conflict set to "peer_timeout". Do not wait indefinitely.
 
 Respond ONLY with valid JSON. No explanation outside the JSON.
 

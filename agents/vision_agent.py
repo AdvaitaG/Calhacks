@@ -1,7 +1,7 @@
 """
 Vision Agent — Sensory Cortex
-Consumes LiveKit camera frames, describes the scene via Gemini 2.5 Flash,
-publishes structured [SCENE] JSON to Band room (Conductor + Threat).
+Consumes LiveKit camera frames (or webcam fallback), describes the scene via
+Gemini 2.5 Flash, publishes structured [SCENE] JSON to Band every second.
 """
 
 import asyncio
@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from band.platform.link import BandLink
 from band.platform.event import RoomAddedEvent
@@ -30,7 +30,9 @@ from agents.shared.config import WS_URL, REST_URL
 GEMINI_API_KEY   = os.environ["GEMINI_API_KEY"]
 VISION_AGENT_ID  = os.environ["VisionID"]
 VISION_API_KEY   = os.environ["VisionBandAPI"]
-VISION_HANDLE    = os.environ.get("VisionHandle", "@eshwar.rajasekar/vision")
+VISION_HANDLE    = os.environ.get("VisionHandle",    "@eshwar.rajasekar/vision")
+CONDUCTOR_HANDLE = os.environ.get("ConductorHandle", "@eshwar.rajasekar/conductor")
+THREAT_HANDLE    = os.environ.get("ThreatHandle",    "@eshwar.rajasekar/threat")
 
 LIVEKIT_URL        = os.environ.get("LIVEKIT_URL", "")
 LIVEKIT_TOKEN      = os.environ.get("LIVEKIT_TOKEN", "")
@@ -38,10 +40,9 @@ LIVEKIT_API_KEY    = os.environ.get("LIVEKIT_API_KEY", "")
 LIVEKIT_API_SECRET = os.environ.get("LIVEKIT_API_SECRET", "")
 LIVEKIT_ROOM       = os.environ.get("LIVEKIT_ROOM", "baymax-robot")
 
+# Minimum seconds between scene publications. Gemini call is the bottleneck
+# (~5-9s) so this only throttles if it ever gets faster.
 FRAME_INTERVAL_SECONDS = 1.0
-
-CONDUCTOR_HANDLE = os.environ.get("ConductorHandle", "@eshwar.rajasekar/conductor")
-THREAT_HANDLE    = os.environ.get("ThreatHandle",    "@eshwar.rajasekar/threat")
 
 # --- Gemini vision -------------------------------------------------------- #
 
@@ -51,7 +52,8 @@ _llm = ChatGoogleGenerativeAI(
     google_api_key=GEMINI_API_KEY,
 )
 
-SYSTEM_PROMPT = """\
+# Fix #4: use SystemMessage so Gemini treats this as system instructions
+_SYSTEM = SystemMessage(content="""\
 You are the sensory cortex of Baymax, a humanoid guide robot for visually impaired people.
 Your single job: describe exactly what you see in the camera frame so the navigation agents can make decisions.
 
@@ -72,19 +74,19 @@ Rules:
 - Do not speculate beyond what is visible.
 - Do not give navigation advice — that is the Conductor's job.
 - Output ONLY the JSON object, no other text.
-"""
+""")
 
 
 def describe_frame(jpeg_bytes: bytes) -> dict:
     b64 = base64.standard_b64encode(jpeg_bytes).decode()
-    msg = HumanMessage(content=[
+    user_msg = HumanMessage(content=[
         {
             "type": "image_url",
             "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
         },
-        {"type": "text", "text": SYSTEM_PROMPT},
+        {"type": "text", "text": "Describe this frame."},
     ])
-    response = _llm.invoke([msg])
+    response = _llm.invoke([_SYSTEM, user_msg])
     text = response.content.strip()
     if text.startswith("```"):
         text = text.split("```")[1]
@@ -129,42 +131,10 @@ def _frame_to_jpeg(frame) -> bytes | None:
         return None
 
 
-# --- Webcam fallback ------------------------------------------------------ #
-
-def _webcam_jpeg() -> bytes | None:
-    try:
-        import cv2, io
-        from PIL import Image
-        cap = cv2.VideoCapture(int(os.environ.get("WEBCAM_INDEX", "0")))
-        ok, frame = cap.read()
-        cap.release()
-        if not ok:
-            return None
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(frame)
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=85)
-        return buf.getvalue()
-    except Exception as e:
-        print(f"[Vision] Webcam error: {e}")
-        return None
-
-
-# --- Vision loop ---------------------------------------------------------- #
-
-async def _vision_loop(tools: AgentTools) -> None:
-    """Continuously grab frames, describe them, publish [SCENE] to Band."""
-    use_livekit = bool(LIVEKIT_URL and _resolve_livekit_token())
-
-    if use_livekit:
-        await _livekit_loop(tools)
-    else:
-        print("[Vision] No LiveKit config — falling back to webcam")
-        await _webcam_loop(tools)
-
+# --- Publish -------------------------------------------------------------- #
 
 async def _publish_scene(tools: AgentTools, jpeg_bytes: bytes) -> None:
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()  # Fix #7: get_running_loop not get_event_loop
     try:
         t0 = time.monotonic()
         scene = await loop.run_in_executor(None, describe_frame, jpeg_bytes)
@@ -176,11 +146,7 @@ async def _publish_scene(tools: AgentTools, jpeg_bytes: bytes) -> None:
               f"hazard={scene.get('hazard_level')} | "
               f"{scene['latency_ms']}ms")
 
-        # Tag conductor + threat so both process the scene in parallel
-        await tools.send_message(
-            content,
-            mentions=[CONDUCTOR_HANDLE, THREAT_HANDLE],
-        )
+        await tools.send_message(content, mentions=[CONDUCTOR_HANDLE, THREAT_HANDLE])
         print("[Vision] Scene posted to Band")
     except Exception as e:
         import traceback
@@ -188,13 +154,53 @@ async def _publish_scene(tools: AgentTools, jpeg_bytes: bytes) -> None:
         traceback.print_exc()
 
 
-async def _webcam_loop(tools: AgentTools) -> None:
-    while True:
-        jpeg = await asyncio.get_event_loop().run_in_executor(None, _webcam_jpeg)
-        if jpeg:
-            await _publish_scene(tools, jpeg)
-        await asyncio.sleep(FRAME_INTERVAL_SECONDS)
+# --- Webcam loop ---------------------------------------------------------- #
 
+# Fix #1: hold cap open for the lifetime of the loop (not reopen every frame)
+# Fix #2: track when the last publish STARTED so cadence = interval, not interval+latency
+# Fix #8: fire-and-forget publish so capture and publish overlap
+async def _webcam_loop(tools: AgentTools) -> None:
+    import cv2
+    cap = cv2.VideoCapture(int(os.environ.get("WEBCAM_INDEX", "0")))
+    if not cap.isOpened():
+        print("[Vision] Could not open webcam — exiting")
+        return
+
+    loop = asyncio.get_running_loop()
+    print("[Vision] Webcam open — starting capture loop")
+    last_publish_start = 0.0
+
+    try:
+        while True:
+            now = time.monotonic()
+            elapsed = now - last_publish_start
+            if elapsed < FRAME_INTERVAL_SECONDS:
+                await asyncio.sleep(FRAME_INTERVAL_SECONDS - elapsed)
+                continue
+
+            # Capture frame (blocking, run in executor)
+            def _read() -> bytes | None:
+                ok, frame = cap.read()
+                if not ok:
+                    return None
+                import io
+                from PIL import Image
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = Image.fromarray(frame)
+                buf = io.BytesIO()
+                img.save(buf, format="JPEG", quality=85)
+                return buf.getvalue()
+
+            jpeg = await loop.run_in_executor(None, _read)
+            if jpeg:
+                last_publish_start = time.monotonic()
+                # Fix #8: fire-and-forget so next frame starts immediately
+                asyncio.create_task(_publish_scene(tools, jpeg))
+    finally:
+        cap.release()
+
+
+# --- LiveKit loop --------------------------------------------------------- #
 
 async def _livekit_loop(tools: AgentTools) -> None:
     from livekit import rtc
@@ -213,7 +219,8 @@ async def _livekit_loop(tools: AgentTools) -> None:
             last_sent = now
             jpeg = _frame_to_jpeg(frame_event.frame)
             if jpeg:
-                await _publish_scene(tools, jpeg)
+                # Fix #8: fire-and-forget so frame consumption isn't blocked by Gemini
+                asyncio.create_task(_publish_scene(tools, jpeg))
 
     @room.on("track_subscribed")
     def on_track(track, publication, participant):
@@ -230,6 +237,15 @@ async def _livekit_loop(tools: AgentTools) -> None:
         pass
     finally:
         await room.disconnect()
+
+
+async def _vision_loop(tools: AgentTools) -> None:
+    use_livekit = bool(LIVEKIT_URL and _resolve_livekit_token())
+    if use_livekit:
+        await _livekit_loop(tools)
+    else:
+        print("[Vision] No LiveKit config — falling back to webcam")
+        await _webcam_loop(tools)
 
 
 # --- Band connection ------------------------------------------------------ #
@@ -265,7 +281,6 @@ async def main() -> None:
         tools = AgentTools(room_id=room_id, rest=link.rest, participants=participants)
         vision_task = asyncio.create_task(_vision_loop(tools))
 
-    # Check for rooms the agent is already in
     try:
         resp = await link.rest.agent_api_chats.list_agent_chats(
             request_options=DEFAULT_REQUEST_OPTIONS,
@@ -285,8 +300,6 @@ async def main() -> None:
     async for event in link:
         if isinstance(event, RoomAddedEvent):
             await _start_vision_for_room(event.room_id)
-
-        # Vision agent doesn't respond to messages — it only publishes.
 
 
 if __name__ == "__main__":
