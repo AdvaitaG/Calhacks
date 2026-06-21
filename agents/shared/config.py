@@ -10,6 +10,7 @@ AGENT_CONFIGS = {
     "lower":       {"agent_id": os.environ["LowerID"],       "api_key": os.environ["LowerBandAPI"]},
     "threat":      {"agent_id": os.environ["ThreatID"],      "api_key": os.environ["ThreatBandAPI"]},
     "spine":       {"agent_id": os.environ["SpineID"],       "api_key": os.environ["SpineBandAPI"]},
+    "vision":      {"agent_id": os.environ["VisionID"],      "api_key": os.environ["VisionBandAPI"]},
 }
 
 WS_URL = "wss://app.band.ai/api/v1/socket/websocket"
