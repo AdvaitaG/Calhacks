@@ -366,38 +366,16 @@ If `fire_reflex: true` → @mentions Spine immediately, bypasses Conductor.
 
 ## Band Agent Config (Eshwar's 6 Agents — Already Registered)
 
-```yaml
-# agent_config.yaml (gitignored)
-conductor:
-  agent_id: "1f72f6d2-b26a-4e2d-a17d-33f837fbcb85"
-  api_key: "REDACTED_CONDUCTOR_KEY"
-  handle: "@eshwar.rajasekar/conductor"
+| Agent | Band Handle |
+|-------|-------------|
+| Conductor | `@eshwar.rajasekar/conductor` |
+| UpperLeft | `@eshwar.rajasekar/upperleft` |
+| UpperRight | `@eshwar.rajasekar/upperright` |
+| Lower | `@eshwar.rajasekar/lower` |
+| Threat | `@eshwar.rajasekar/threat` |
+| Spine | `@eshwar.rajasekar/spine` |
 
-upper_left:
-  agent_id: "3f45823f-3d8a-45fa-a842-eae788d59050"
-  api_key: "REDACTED_UPPERLEFT_KEY"
-  handle: "@eshwar.rajasekar/upperleft"
-
-upper_right:
-  agent_id: "73f0bb96-9f44-4e07-9944-db74a8078d30"
-  api_key: "REDACTED_UPPERRIGHT_KEY"
-  handle: "@eshwar.rajasekar/upperright"
-
-lower:
-  agent_id: "c61be48a-eed0-4bce-8deb-6fe7a9ee4bc1"
-  api_key: "REDACTED_LOWER_KEY"
-  handle: "@eshwar.rajasekar/lower"
-
-threat:
-  agent_id: "9373ba73-3cf4-4f5d-a4f7-abbae6f9876e"
-  api_key: "REDACTED_THREAT_KEY"
-  handle: "@eshwar.rajasekar/threat"
-
-spine:
-  agent_id: "d8c41589-648f-41d6-a273-f9c958c8f342"
-  api_key: "REDACTED_SPINE_KEY"
-  handle: "@eshwar.rajasekar/spine"
-```
+UUIDs and API keys are in `.env` (gitignored). Do not put keys in any tracked file.
 
 ---
 
