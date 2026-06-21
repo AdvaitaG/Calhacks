@@ -1,5 +1,6 @@
 band-sdk
 langchain
+langchain-openai  # Nebius AI Studio (OpenAI-compatible) inference
 langchain-google-genai
 langgraph
 python-dotenv
