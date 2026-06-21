@@ -10,17 +10,80 @@ Do not change the interface contract without talking to Eshwar first.
 
 # PART 1 — Eshwar ↔ Adil Interface Contract
 
+## Answers to DEPENDENCIES_FROM_ESHWAR.md
+
+### Item 1 — Robot Band credential
+Register a Band agent named `robot` at app.band.ai. Add `RobotID`, `RobotBandAPI`, `RobotHandle` to `.env`.
+Use `BandLink` + `AgentTools` to connect (same pattern as `agents/vision_agent.py`). See Item 6 for the snippet.
+
+### Item 2 — Room to subscribe to
+Use the same dynamic discovery Vision uses: connect via `BandLink`, call
+`link.rest.agent_api_chats.list_agent_chats()` on startup, join the first result.
+The current room id is `d7983f86-8ec7-42a6-a5ce-d492190167e3` but don't hardcode it — use discovery.
+
+### Item 3 — FINAL_COMMAND wire format
+Messages are prefixed: `[FINAL_COMMAND] {json}` — same pattern as `[SCENE]`.
+Filter on: message content starts with `[FINAL_COMMAND]`. No @mention needed; just parse the JSON after the tag.
+Sender handle is `os.environ.get("ConductorHandle", "@eshwar.rajasekar/conductor")`.
+
+### Item 4 — Authoritative schema (code wins, contract updated below)
+`left_arm_action` / `right_arm_action` / `free_arm_action` are the real fields. `arm_action` is removed.
+`timestamp` IS included (epoch ms). See schema below.
+
+### Item 5 — REFLEX path
+Spine fires `[HALT]` directly to arm/lower agents (~90ms). Safety then posts `[REFLEX_EXECUTED]` to Conductor.
+Conductor issues a FINAL_COMMAND with `"path": "REFLEX"` and `"command": "EMERGENCY_STOP"`.
+**You will receive a FINAL_COMMAND just like normal — just check `path == "REFLEX"` and prioritize it.**
+Local depth-frame reflex (your bridge) is independent and separate; this is just the cloud notification.
+
+### Item 6 — Band connection snippet
+```python
+from band.platform.link import BandLink
+from band.runtime.tools import AgentTools
+from band.client.rest import DEFAULT_REQUEST_OPTIONS
+import json, os
+
+link = BandLink(
+    agent_id=os.environ["RobotID"],
+    api_key=os.environ["RobotBandAPI"],
+)
+await link.connect()
+resp = await link.rest.agent_api_chats.list_agent_chats(request_options=DEFAULT_REQUEST_OPTIONS)
+room_id = resp.data[0].id
+tools = AgentTools(room_id=room_id, rest=link.rest)
+
+async for event in link:
+    if isinstance(event, MessageEvent):
+        content = event.payload.content or ""
+        if content.startswith("[FINAL_COMMAND]"):
+            cmd = json.loads(content[len("[FINAL_COMMAND]"):].strip())
+            # cmd["command"], cmd["path"], cmd["gait_action"], etc.
+```
+
+### Item 7 — Cadence
+CORTICAL: ~800ms–1s (Gemini latency dominates). REFLEX cloud path: ~200–400ms (still LLM).
+Local depth-frame reflex in your bridge: target <100ms, no LLM involved.
+2-second fallback timeout is correct.
+
+---
+
 ## The One Thing Eshwar Sends You
 
-When the Conductor agent finishes a decision cycle (Safety approved), it publishes a final command to the Band room. **You listen for this message and forward it to the robot via LiveKit.**
+When the Conductor agent finishes a decision cycle (Safety approved), it publishes a final command to the Band room prefixed `[FINAL_COMMAND]`. **You listen for this message and forward it to the robot.**
 
 Eshwar's Conductor posts to Band:
+
+```
+[FINAL_COMMAND] {json}
+```
 
 ```json
 {
   "type": "FINAL_COMMAND",
   "command": "GUIDE_LEFT | GUIDE_RIGHT | MOVE_FORWARD | SLOW_DOWN | STOP | EMERGENCY_STOP",
-  "arm_action": "GENTLE_LEFT_PULL | GENTLE_RIGHT_PULL | FORWARD_PUSH | HOLD_STEADY | RELEASE",
+  "left_arm_action": "GENTLE_LEFT_PULL | GENTLE_RIGHT_PULL | FORWARD_PUSH | HOLD_STEADY | RELEASE",
+  "right_arm_action": "GENTLE_LEFT_PULL | GENTLE_RIGHT_PULL | FORWARD_PUSH | HOLD_STEADY | RELEASE",
+  "free_arm_action": "SWEEP | MIRROR | BARRIER | HALT_EXTEND",
   "gait_action": "WALK_NORMAL | WALK_SLOW | PAUSE | STEP_HIGH | STEP_DOWN | HALT",
   "pace_ms": 500,
   "reason": "one sentence — why this command was chosen",

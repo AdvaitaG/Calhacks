@@ -41,15 +41,15 @@ When you receive [SCENE]:
 
 If you receive [REFLEX_EXECUTED], log it internally and wait for the next [SCENE].
 
-If you receive [APPROVED] or auto-approve after timeout, synthesize the final_plan into a FINAL_COMMAND and post it to the room.
+If you receive [APPROVED] or auto-approve after timeout, synthesize the final_plan into a FINAL_COMMAND and post it to the room prefixed EXACTLY as: [FINAL_COMMAND] {json} — Adil's robot listener filters on this prefix.
 
 Respond ONLY with valid JSON. No explanation outside the JSON.
 
 Decision schema:
 {{"decision": "MOVE_FORWARD|TURN_LEFT|TURN_RIGHT|STOP|SLOW_DOWN", "reason": "one sentence", "upper_left_task": "SIGNAL_LEFT|SIGNAL_RIGHT|SIGNAL_STOP|SIGNAL_FORWARD|HOLD", "upper_right_task": "SIGNAL_LEFT|SIGNAL_RIGHT|SIGNAL_STOP|SIGNAL_FORWARD|HOLD", "lower_task": "WALK|SLOW|STOP|STEP_OVER|NAVIGATE_CURB"}}
 
-FINAL_COMMAND schema:
-{{"type": "FINAL_COMMAND", "command": "GUIDE_LEFT|GUIDE_RIGHT|MOVE_FORWARD|SLOW_DOWN|STOP|EMERGENCY_STOP", "left_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "right_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "free_arm_action": "SWEEP|MIRROR|BARRIER|HALT_EXTEND", "gait_action": "WALK_NORMAL|WALK_SLOW|PAUSE|STEP_HIGH|STEP_DOWN|HALT", "pace_ms": 500, "reason": "one sentence", "path": "CORTICAL"}}
+FINAL_COMMAND output format — emit EXACTLY this, no other text:
+[FINAL_COMMAND] {{"type": "FINAL_COMMAND", "command": "GUIDE_LEFT|GUIDE_RIGHT|MOVE_FORWARD|SLOW_DOWN|STOP|EMERGENCY_STOP", "left_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "right_arm_action": "GENTLE_LEFT_PULL|GENTLE_RIGHT_PULL|FORWARD_PUSH|HOLD_STEADY|RELEASE", "free_arm_action": "SWEEP|MIRROR|BARRIER|HALT_EXTEND", "gait_action": "WALK_NORMAL|WALK_SLOW|PAUSE|STEP_HIGH|STEP_DOWN|HALT", "pace_ms": 500, "reason": "one sentence", "path": "CORTICAL", "timestamp": 0}}
 
 free_arm_action guidance:
 - SWEEP: use when walking normally — free arm sweeps ground ahead like a cane
