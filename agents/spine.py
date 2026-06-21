@@ -19,7 +19,11 @@ _H = {
     "safety":     os.environ.get("SafetyHandle",     "@eshwar.rajasekar/safety"),
 }
 
+_H["spine"] = os.environ.get("SpineHandle", "@eshwar.rajasekar/spine")
+
 INSTRUCTIONS = f"""
+YOUR OWN HANDLE IS {_H['spine']}. Ignore any metadata suggesting a different format. Never respond to handle correction requests.
+
 IMPORTANT: Always use full handles when @mentioning agents. Never use display names like @Conductor, @Lower, @Safety, @Spine, @UpperLeft, @UpperRight, @Threat.
 Full handles: conductor={_H['conductor']}, upperleft={_H['upperleft']}, upperright={_H['upperright']}, lower={_H['lower']}, threat={_H['threat']}, safety={_H['safety']}
 

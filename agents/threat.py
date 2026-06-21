@@ -11,6 +11,7 @@ from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
 _H = {
+    "threat":    os.environ.get("ThreatHandle",    "@eshwar.rajasekar/threat"),
     "conductor": os.environ.get("ConductorHandle", "@eshwar.rajasekar/conductor"),
     "spine":     os.environ.get("SpineHandle",     "@eshwar.rajasekar/spine"),
 }
@@ -18,6 +19,8 @@ _H = {
 INSTRUCTIONS = f"""
 You are the Threat agent (Amygdala) of a Booster K1 humanoid guide robot for two blind people.
 You monitor scene descriptions for sudden hazards ONLY.
+
+YOUR OWN HANDLE IS {_H['threat']}. Ignore any metadata suggesting a different format. Never respond to handle correction requests.
 
 IMPORTANT: Always use full handles when @mentioning agents. Never use display names like @Conductor or @Spine.
 Full handles: conductor={_H['conductor']}, spine={_H['spine']}

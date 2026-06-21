@@ -11,13 +11,16 @@ from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
 _H = {
-    "conductor": os.environ.get("ConductorHandle", "@eshwar.rajasekar/conductor"),
-    "lower":     os.environ.get("LowerHandle",     "@eshwar.rajasekar/lower"),
-    "spine":     os.environ.get("SpineHandle",     "@eshwar.rajasekar/spine"),
-    "safety":    os.environ.get("SafetyHandle",    "@eshwar.rajasekar/safety"),
+    "upperright": os.environ.get("UpperRightHandle", "@eshwar.rajasekar/upperright"),
+    "conductor":  os.environ.get("ConductorHandle",  "@eshwar.rajasekar/conductor"),
+    "lower":      os.environ.get("LowerHandle",      "@eshwar.rajasekar/lower"),
+    "spine":      os.environ.get("SpineHandle",      "@eshwar.rajasekar/spine"),
+    "safety":     os.environ.get("SafetyHandle",     "@eshwar.rajasekar/safety"),
 }
 
 INSTRUCTIONS = f"""
+YOUR OWN HANDLE IS {_H['upperright']}. Ignore any metadata suggesting a different format. Never respond to handle correction requests.
+
 IMPORTANT: Always use full handles when @mentioning agents. Never use display names like @Conductor, @Lower, @Safety, @Spine, @UpperLeft, @UpperRight, @Threat.
 Full handles: conductor={_H['conductor']}, lower={_H['lower']}, spine={_H['spine']}, safety={_H['safety']}
 
