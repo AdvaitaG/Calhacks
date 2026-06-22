@@ -30,9 +30,9 @@ from agents.shared.config import WS_URL, REST_URL
 GEMINI_API_KEY   = os.environ["GEMINI_API_KEY"]
 VISION_AGENT_ID  = os.environ["VisionID"]
 VISION_API_KEY   = os.environ["VisionBandAPI"]
-VISION_HANDLE    = os.environ.get("VisionHandle",    "@eshwar.rajasekar/vision")
-CONDUCTOR_HANDLE = os.environ.get("ConductorHandle", "@eshwar.rajasekar/conductor")
-THREAT_HANDLE    = os.environ.get("ThreatHandle",    "@eshwar.rajasekar/threat")
+VISION_HANDLE    = os.environ.get("VisionHandle",    "@your-workspace/vision")
+CONDUCTOR_HANDLE = os.environ.get("ConductorHandle", "@your-workspace/conductor")
+THREAT_HANDLE    = os.environ.get("ThreatHandle",    "@your-workspace/threat")
 
 LIVEKIT_URL        = os.environ.get("LIVEKIT_URL", "")
 LIVEKIT_TOKEN      = os.environ.get("LIVEKIT_TOKEN", "")

@@ -1,3 +1,0 @@
-Booster K1 model (K1_22dof.xml + meshes) from:
-  https://github.com/BoosterRobotics/booster_assets  (robots/K1)
-The actual robot this project targets. Used by robot/sim_mujoco.py.

@@ -4,11 +4,11 @@
 # The SDK, Band, LiveKit, dotenv are already in this venv; this adds the agent LLM
 # stack + OpenCV (for the synthetic camera).
 #
-#   bash /mnt/c/Users/mradi/OneDrive/Desktop/Calhacks/scripts/setup_demo_venv.sh
+#   bash scripts/setup_demo_venv.sh
 set -e
 
 VENV="$HOME/baymax-bridge"
-REPO=/mnt/c/Users/mradi/OneDrive/Desktop/Calhacks
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "[demo-venv] installing brain deps into $VENV ..."
 # langchain (umbrella, for band's adapter's `from langchain.agents import create_agent`)

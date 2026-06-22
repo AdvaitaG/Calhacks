@@ -11,15 +11,15 @@ from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
 _H = {
-    "conductor":  os.environ.get("ConductorHandle",  "@eshwar.rajasekar/conductor"),
-    "upperleft":  os.environ.get("UpperleftHandle",  "@eshwar.rajasekar/upperleft"),
-    "upperright": os.environ.get("UpperRightHandle", "@eshwar.rajasekar/upperright"),
-    "lower":      os.environ.get("LowerHandle",      "@eshwar.rajasekar/lower"),
-    "threat":     os.environ.get("ThreatHandle",     "@eshwar.rajasekar/threat"),
-    "safety":     os.environ.get("SafetyHandle",     "@eshwar.rajasekar/safety"),
+    "conductor":  os.environ.get("ConductorHandle",  "@your-workspace/conductor"),
+    "upperleft":  os.environ.get("UpperleftHandle",  "@your-workspace/upperleft"),
+    "upperright": os.environ.get("UpperRightHandle", "@your-workspace/upperright"),
+    "lower":      os.environ.get("LowerHandle",      "@your-workspace/lower"),
+    "threat":     os.environ.get("ThreatHandle",     "@your-workspace/threat"),
+    "safety":     os.environ.get("SafetyHandle",     "@your-workspace/safety"),
 }
 
-_H["spine"] = os.environ.get("SpineHandle", "@eshwar.rajasekar/spine")
+_H["spine"] = os.environ.get("SpineHandle", "@your-workspace/spine")
 
 INSTRUCTIONS = f"""
 YOUR OWN HANDLE IS {_H['spine']}. Ignore any metadata suggesting a different format. Never respond to handle correction requests.

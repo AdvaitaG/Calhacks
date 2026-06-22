@@ -1,7 +1,7 @@
 #!/bin/bash
 # Finish building the Booster SDK Python binding on the Ubuntu 22.04 distro.
 # Run with one short command:
-#     bash /mnt/c/Users/mradi/OneDrive/Desktop/Calhacks/scripts/build_sdk_22.sh
+#     bash scripts/build_sdk_22.sh
 #
 # Installs into SYSTEM python3 (via `sudo make install`), so the smoke test runs
 # with plain `python3` — no venv, no band-sdk, no requirements.txt needed.

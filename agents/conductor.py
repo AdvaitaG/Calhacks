@@ -11,13 +11,13 @@ from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
 _H = {
-    "conductor":  os.environ.get("ConductorHandle",  "@eshwar.rajasekar/conductor"),
-    "upperleft":  os.environ.get("UpperleftHandle",  "@eshwar.rajasekar/upperleft"),
-    "upperright": os.environ.get("UpperRightHandle", "@eshwar.rajasekar/upperright"),
-    "lower":      os.environ.get("LowerHandle",      "@eshwar.rajasekar/lower"),
-    "safety":     os.environ.get("SafetyHandle",     "@eshwar.rajasekar/safety"),
-    "threat":     os.environ.get("ThreatHandle",     "@eshwar.rajasekar/threat"),
-    "robot":      os.environ.get("RobotHandle",      "@eshwar.rajasekar/robot"),
+    "conductor":  os.environ.get("ConductorHandle",  "@your-workspace/conductor"),
+    "upperleft":  os.environ.get("UpperleftHandle",  "@your-workspace/upperleft"),
+    "upperright": os.environ.get("UpperRightHandle", "@your-workspace/upperright"),
+    "lower":      os.environ.get("LowerHandle",      "@your-workspace/lower"),
+    "safety":     os.environ.get("SafetyHandle",     "@your-workspace/safety"),
+    "threat":     os.environ.get("ThreatHandle",     "@your-workspace/threat"),
+    "robot":      os.environ.get("RobotHandle",      "@your-workspace/robot"),
 }
 
 INSTRUCTIONS = f"""

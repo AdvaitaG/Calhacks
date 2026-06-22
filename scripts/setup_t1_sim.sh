@@ -5,7 +5,7 @@
 # FastDDS profile. Reuses the Booster SDK you already installed (SDK ok).
 #
 # Run once:
-#     bash /mnt/c/Users/mradi/OneDrive/Desktop/Calhacks/scripts/setup_t1_sim.sh
+#     bash scripts/setup_t1_sim.sh
 #
 # Big downloads (~1.3 GB); -C - resumes if interrupted, and existing files are
 # skipped, so it's safe to re-run.

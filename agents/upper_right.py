@@ -11,11 +11,11 @@ from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
 _H = {
-    "upperright": os.environ.get("UpperRightHandle", "@eshwar.rajasekar/upperright"),
-    "conductor":  os.environ.get("ConductorHandle",  "@eshwar.rajasekar/conductor"),
-    "lower":      os.environ.get("LowerHandle",      "@eshwar.rajasekar/lower"),
-    "spine":      os.environ.get("SpineHandle",      "@eshwar.rajasekar/spine"),
-    "safety":     os.environ.get("SafetyHandle",     "@eshwar.rajasekar/safety"),
+    "upperright": os.environ.get("UpperRightHandle", "@your-workspace/upperright"),
+    "conductor":  os.environ.get("ConductorHandle",  "@your-workspace/conductor"),
+    "lower":      os.environ.get("LowerHandle",      "@your-workspace/lower"),
+    "spine":      os.environ.get("SpineHandle",      "@your-workspace/spine"),
+    "safety":     os.environ.get("SafetyHandle",     "@your-workspace/safety"),
 }
 
 INSTRUCTIONS = f"""

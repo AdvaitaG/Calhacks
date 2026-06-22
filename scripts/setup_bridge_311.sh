@@ -2,7 +2,7 @@
 # Set up the LISTENER side of the full pipeline on the Ubuntu 22.04 distro:
 # a Python 3.11 venv (band-sdk needs >=3.11) that can both talk to Band AND
 # drive the robot via the SDK. Run once:
-#     bash /mnt/c/Users/mradi/OneDrive/Desktop/Calhacks/scripts/setup_bridge_311.sh
+#     bash scripts/setup_bridge_311.sh
 #
 # Why 3.11: band-sdk requires Python >=3.11, but the distro default is 3.10.
 # deadsnakes provides 3.11 alongside it. The Booster C++ libs are already
@@ -45,5 +45,5 @@ echo "[bridge311] verifying ..."
 "$VENV/bin/python" -c "from band.platform.link import BandLink; import booster_robotics_sdk_python; print('bridge env OK')"
 echo ""
 echo "[bridge311] DONE. Run the listener with:"
-echo "    cd /mnt/c/Users/mradi/OneDrive/Desktop/Calhacks/robot"
+echo "    cd <repo>/robot"
 echo "    ~/baymax-bridge/bin/python command_bridge.py band real"

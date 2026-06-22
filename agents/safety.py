@@ -11,13 +11,13 @@ from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
 # Band routes by FULL handles only — never display names. Handles come from env,
-# falling back to the @eshwar.rajasekar/ format the other agents already use.
+# falling back to the @your-workspace/ format the other agents already use.
 _H = {
-    "safety":     os.environ.get("SafetyHandle",     "@eshwar.rajasekar/safety"),
-    "conductor":  os.environ.get("ConductorHandle",  "@eshwar.rajasekar/conductor"),
-    "upperleft":  os.environ.get("UpperleftHandle",  "@eshwar.rajasekar/upperleft"),
-    "upperright": os.environ.get("UpperRightHandle", "@eshwar.rajasekar/upperright"),
-    "lower":      os.environ.get("LowerHandle",      "@eshwar.rajasekar/lower"),
+    "safety":     os.environ.get("SafetyHandle",     "@your-workspace/safety"),
+    "conductor":  os.environ.get("ConductorHandle",  "@your-workspace/conductor"),
+    "upperleft":  os.environ.get("UpperleftHandle",  "@your-workspace/upperleft"),
+    "upperright": os.environ.get("UpperRightHandle", "@your-workspace/upperright"),
+    "lower":      os.environ.get("LowerHandle",      "@your-workspace/lower"),
 }
 
 INSTRUCTIONS = f"""

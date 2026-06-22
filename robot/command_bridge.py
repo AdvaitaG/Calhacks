@@ -1,17 +1,17 @@
 """Baymax return path (HOUR 2) — Band FINAL_COMMAND -> robot velocity.
 
-Consumes FINAL_COMMAND messages (from Eshwar's Conductor, via Band), arbitrates
+Consumes FINAL_COMMAND messages (from the Conductor, via Band), arbitrates
 priority (EMERGENCY_STOP / REFLEX always wins when commands race), enforces a
 2-second no-command STOP failsafe, maps the command to a {vx, vy, vyaw} velocity,
 and drives the robot through B1LocoClient.
 
-Runs end-to-end on a laptop TODAY with mocks:
+Runs end-to-end on a laptop with mocks:
 
     cd robot && python command_bridge.py        # scripted mock demo
 
-Two swaps for live integration (tracked in ../DEPENDENCIES_FROM_ESHWAR.md):
-  1. command source : MockCommandSource  -> BandCommandSource   (needs deps #1-4)
-  2. motion sink     : B1LocoClientStub   -> real B1LocoClient    (needs SDK / K1)
+Two swaps take it live:
+  1. command source : MockCommandSource  -> BandCommandSource   (needs RobotID/key)
+  2. motion sink     : B1LocoClientStub   -> real B1LocoClient    (needs SDK / robot)
 Everything in between — parsing, arbitration, failsafe, velocity map — is final
 and unit-testable, so flipping to live is a small, low-risk change.
 """
@@ -213,8 +213,7 @@ async def band_command_source() -> AsyncIterator[str]:
     for anything containing FINAL_COMMAND. Mirrors the BandLink pattern in
     agents/vision_agent.py. We filter on content only (parse_final_command
     validates the rest), so this accepts CORTICAL and REFLEX commands no matter
-    which agent posts them — robust to the open questions in
-    ../DEPENDENCIES_FROM_ESHWAR.md #2-4. Needs RobotID/RobotBandAPI (dep #1)."""
+    which agent posts them. Needs RobotID/RobotBandAPI in .env."""
     from band.platform.link import BandLink
     from band.platform.event import MessageEvent, RoomAddedEvent
     from band.client.rest import DEFAULT_REQUEST_OPTIONS
@@ -305,28 +304,18 @@ async def run(source: AsyncIterator[str], client: B1LocoClientStub) -> None:
 def _make_sink(name: str):
     """sink selector — all mirror the B1LocoClient interface (Move/damp/...):
       'stub'   logs velocities
-      'mujoco' drives the local MuJoCo sim (add '--view' for the window)
-      'real'   drives the actual K1 via the SDK (booth; needs booster_robotics_sdk)
+      'real'   drives the robot via the SDK (needs booster_robotics_sdk)
     """
     if name == "real":
         from b1_loco_client_sink import B1LocoClientSink
         return B1LocoClientSink()
-    if name == "mujoco":
-        from sim_mujoco import MujocoSink, _front_view
-        sink = MujocoSink()
-        if "--view" in sys.argv or os.environ.get("BAYMAX_VIEW"):
-            import mujoco.viewer
-            viewer = mujoco.viewer.launch_passive(sink.model, sink.data)
-            _front_view(viewer, sink.model)
-            sink._viewer = viewer
-        return sink
     return B1LocoClientStub()
 
 
 def main() -> None:
     logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO").upper(),
                         format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
-    # usage: command_bridge.py [mock|band] [stub|mujoco]
+    # usage: command_bridge.py [mock|band] [stub|real]
     mode = sys.argv[1] if len(sys.argv) > 1 else "mock"
     sink_name = sys.argv[2] if len(sys.argv) > 2 else "stub"
     sink = _make_sink(sink_name)

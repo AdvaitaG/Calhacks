@@ -14,7 +14,7 @@
 ## Band handles
 - All agent handles are read from `.env` as `<Name>Handle` vars (e.g. `ConductorHandle`, `SafetyHandle`)
 - Never hardcode handles in source code
-- Defaults use the `@eshwar.rajasekar/<name>` format
+- Defaults use the `@your-workspace/<name>` format
 
 ## Agent code patterns
 - All agents use `AGENT_CONFIGS[name]` from `agents/shared/config.py` for credentials

@@ -1,16 +1,13 @@
+# Band multi-agent fleet
 band-sdk
 langchain
-langchain-openai  # Nebius AI Studio (OpenAI-compatible) inference
-langchain-google-genai
 langgraph
+langchain-google-genai            # Gemini (default agent LLM)
+langchain-openai                  # Nebius AI Studio (OpenAI-compatible) — optional
 python-dotenv
-# robot-side: LiveKit transport + webcam capture (robot/robot.py)
+
+# Vision Agent + camera transport
 livekit
 livekit-api
-livekit-portal
 opencv-python
-# robot-side: local MuJoCo simulator sink (robot/sim_mujoco.py)
-mujoco
-arize-phoenix
-opentelemetry-sdk
-opentelemetry-exporter-otlp
+pillow

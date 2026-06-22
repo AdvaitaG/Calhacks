@@ -11,9 +11,9 @@ from agents.shared.llm import make_llm
 from agents.shared.config import AGENT_CONFIGS, WS_URL, REST_URL
 
 _H = {
-    "threat":    os.environ.get("ThreatHandle",    "@eshwar.rajasekar/threat"),
-    "conductor": os.environ.get("ConductorHandle", "@eshwar.rajasekar/conductor"),
-    "spine":     os.environ.get("SpineHandle",     "@eshwar.rajasekar/spine"),
+    "threat":    os.environ.get("ThreatHandle",    "@your-workspace/threat"),
+    "conductor": os.environ.get("ConductorHandle", "@your-workspace/conductor"),
+    "spine":     os.environ.get("SpineHandle",     "@your-workspace/spine"),
 }
 
 INSTRUCTIONS = f"""

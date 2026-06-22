@@ -2,7 +2,7 @@
 # ============================================================================
 # ONE-COMMAND BAYMAX DEMO  (run in ONE terminal on the Ubuntu 22.04 distro)
 #
-#   bash /mnt/c/Users/mradi/OneDrive/Desktop/Calhacks/scripts/run_demo.sh
+#   bash scripts/run_demo.sh
 #
 # Brings up the whole pipeline in order, in this one terminal:
 #   fresh Band room -> Webots (T1 world) -> control runner -> agents + camera
@@ -13,7 +13,7 @@
 # ============================================================================
 # (no `set -u`: env.sh expands $LD_LIBRARY_PATH/$PATH which may be unset)
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
-REPO=/mnt/c/Users/mradi/OneDrive/Desktop/Calhacks
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SIM="$HOME/booster_sim"
 VENV="$HOME/baymax-bridge"
 PY="$VENV/bin/python"
